@@ -2866,7 +2866,181 @@ public static void main(String[] args) {
 
 有了这些特性之后，接口似乎变得也不是那么完全纯粹的抽象了。
 
+------
 
+### 内部类
+
+#### 成员内部类
+
+>成员内部类调用方法：
+>
+>**`外部类名 外部类对象 = new 外部类名（）；`**
+>
+>**`外部类名 . 内部类名 内部类对象 = 外部类对象 . new 外部类名（）；`**
+
+案例：
+
+~~~java
+package javaSE.Inner_class;
+//成员内部类
+public class Member_Internal_Class {
+    public static void main(String[] args) {
+        Outer outer = new Outer();
+        Outer.Inner inner = outer.new Inner();//调用成员内部类格式
+        inner.show();
+        outer.test2();
+    }
+}
+class Outer{
+    int m = 0;
+    void test1(){
+        System.out.println("外部类方法test1（）");
+    }
+    //成员内部类Inner
+    class Inner{
+        int n = 1;
+        //成员内部类show方法
+        void show(){
+            System.out.println("外部类成员变量m="+m);
+            test1();
+        }
+        //成员内部类show2方法
+        void show2(){
+            System.out.println("内部类成员方法show2（）");
+        }
+    }
+    void test2(){
+        Inner inner = new Inner();
+        System.out.println("内部类成员变量n="+inner.n);
+        inner.show2();
+    }
+}
+~~~
+
+结果：
+
+![](assets/成员内部类.png)
+
+
+
+------
+
+#### 局部内部类
+
+>又名方法内部类，是指某个局部范围中的类，它和局部变量都是方法中定义的，`有效范围只限于方法内部`！！！
+
+案例：
+
+~~~java
+package javaSE.Inner_class;
+
+public class local_inner_class {
+    public static void main(String[] args) {
+        Outer1 outer1 = new Outer1();
+        outer1.test2();
+    }
+}
+class Outer1{
+    int m = 0;
+    void test1(){
+        System.out.println("外部类方法test1（）");
+    }
+    void test2(){
+        //定义一个局部内部类，在局部内部类中访问外部类的变量和方法
+        class Inner1{
+            int n = 1;
+            void show(){
+                System.out.println("外部类成员变量m="+m);
+                test1();
+            }
+        }
+        //访问局部内部类中的变量和方法
+        Inner1 inner1 = new Inner1();
+        System.out.println("局部内部类变量 n = " + inner1.n);
+        inner1.show();
+    }
+}
+~~~
+
+结果：
+
+![](assets/局部内部类.png)
+
+------
+
+#### 静态内部类
+
+>静态内部类调用方法：
+>
+>**`外部类名 . 静态内部类名 变量名 = new 外部类名 . 静态内部类名（）；`**
+
+案例：
+
+~~~java
+package javaSE.Inner_class;
+
+public class Static_inner_classes {
+    public static void main(String[] args) {
+        Outer2.Inner2 inner2 = new Outer2.Inner2();
+        inner2.show();
+    }
+}
+class Outer2{
+    static int m = 0;
+    static class Inner2{
+        int n = 1;
+        void show(){
+            //在静态内部类的方法中访问外部类的静态变量m
+            System.out.println("外部类成员变量m="+m);
+        }
+    }
+}
+~~~
+
+结果：
+
+![](assets/静态内部类.png)
+
+------
+
+#### 匿名内部类
+
+>匿名内部类调用方法：
+>
+>**`new 继承的父类或实体的接口名（）{`**
+>
+>​         **` 匿名内部类的类体`**
+>
+>**`}`**
+
+案例：
+
+~~~java
+package javaSE.Inner_class;
+interface Animal{
+    void shout();
+}
+public class anonymous_inner_class {
+    public static void main(String[] args) {
+        String name = "小花";
+        animalShout(new Animal() {
+            @Override
+            public void shout() {
+                System.out.println(name + "喵喵......");
+            }
+        });
+    }
+    public static void animalShout(Animal an){
+        an.shout();
+    }
+}
+~~~
+
+结果：
+
+![](assets/匿名内部类.png)
+
+------
 
 ### 时间类LocalDate
 
