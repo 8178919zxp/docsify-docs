@@ -3042,6 +3042,217 @@ public class anonymous_inner_class {
 
 ------
 
+### lambda表达式
+
+- 标准格式为：`([参数类型 参数名称,]...) ‐> { 代码语句，包括返回值 }`
+- 和匿名内部类不同，Lambda仅支持接口，不支持抽象类
+- 接口内部必须有且仅有一个抽象方法（可以有多个方法，但是必须保证其他方法有默认实现，必须留一个抽象方法出来）
+
+上面匿名内部类的案例可以写成：
+~~~java
+public class anonymous_inner_class {
+    public static void main(String[] args) {
+        String name = "小花";
+        Animal animal = () -> new Animal() {
+            @Override
+            public void shout() {
+                System.out.println(name + "喵喵......");
+            }
+        };
+        animal.shout();
+    }
+}
+//这时可以直接用lambda表达式！注意只有一行代码花括号可以省略，多行要打出来！！！
+public class anonymous_inner_class {
+    public static void main(String[] args) {
+        String name = "小花";
+        Animal animal = () -> System.out.println(name + "喵喵......");
+        animal.shout();
+    }
+}
+~~~
+
+多个行如下：
+
+~~~java
+public class anonymous_inner_class {
+    public static void main(String[] args) {
+        String name = "小花";
+        Animal animal = () -> {
+            System.out.println("叫声：");
+            System.out.println(name + "喵喵......");
+        };
+        animal.shout();
+    }
+}
+~~~
+
+如果有且只有一个返回语句则可以如下
+
+~~~java
+Animal animal = (a) -> {
+            return "今天认识了"+a;
+        };
+~~~
+
+~~~java
+Animal animal = (a) ->  "今天认识了"+a;
+~~~
+
+如果参数只有一个则可以如下：
+
+~~~java
+Animal animal = a ->  "今天认识了"+a; //去除小括号
+~~~
+
+如果一个方法的参数需要的是一个接口的实现：
+
+~~~java
+//接口
+package javaSE.lambda;
+
+public interface Study {
+    void study();
+}
+
+//Main类
+package javaSE.lambda;
+
+public class Main {
+    public static void main(String[] args) {
+        test(() -> System.out.println("hello world"));//参数直接写成lambda表达式
+    }
+    private static void test(Study s){
+        s.study();
+    }
+}
+
+~~~
+
+------
+
+### 方法引用
+
+方法引用就是将一个已实现的方法，直接作为接口中抽象方法的实现（当然前提是方法定义得一样才行）
+
+```java
+public interface Study {
+    int sum(int a, int b);   //待实现的求和方法
+}
+```
+
+那么使用时候，可以直接使用Lambda表达式：
+
+```java
+public static void main(String[] args) {
+    Study study = (a, b) -> a + b;
+}
+```
+
+只不过还能更简单，因为Integer类中默认提供了求两个int值之和的方法：
+
+```java
+//Integer类中就已经有对应的实现了
+public static int sum(int a, int b) {
+    return a + b;
+}
+```
+
+此时，我们可以直接将已有方法的实现作为接口的实现：
+
+```java
+public static void main(String[] args) {
+    Study study = (a, b) -> Integer.sum(a, b);   //直接使用Integer为我们通过好的求和方法
+    System.out.println(study.sum(10, 20));
+}
+```
+
+我们发现，Integer.sum的参数和返回值，跟我们在Study中定义的完全一样，所以说我们可以直接使用方法引用：
+
+```java
+public static void main(String[] args) {
+    Study study = Integer::sum;    //使用双冒号来进行方法引用，静态方法使用 类名::方法名 的形式
+    System.out.println(study.sum(10, 20));
+}
+```
+
+方法引用其实本质上就相当于将其他方法的实现，直接作为接口中抽象方法的实现。任何方法都可以通过方法引用作为实现：
+
+```java
+public interface Study {
+    String study();
+}
+```
+
+如果是普通从成员方法，我们同样需要使用对象来进行方法引用：
+
+```java
+public static void main(String[] args) {
+    Main main = new Main();
+    Study study = main::lbwnb;   //成员方法因为需要具体对象使用，所以说只能使用 对象::方法名 的形式
+}
+
+public String lbwnb(){
+    return "卡布奇诺今犹在，不见当年倒茶人。";
+}
+```
+
+因为现在只需要一个String类型的返回值，由于String的构造方法在创建对象时也会得到一个String类型的结果，所以说：
+
+```java
+public static void main(String[] args) {
+    Study study = String::new;    //没错，构造方法也可以被引用，使用new表示
+}
+```
+
+反正只要是符合接口中方法的定义的，都可以直接进行方法引用。
+
+------
+
+### 冒泡排序
+
+>比对方法：左边比右边大就于右边交换位置
+
+动图演示：
+
+![](assets/冒泡排序.gif)
+
+
+
+案例：
+
+~~~java
+package javaSE;
+//冒泡排序
+import java.util.Arrays;
+
+public class bubble_sort {
+    public static void main(String[] args) {
+        int[] arr = new int[]{1, 5, 3, 2,10, 4};
+        for (int i = 0; i < arr.length-1; i++) {
+            boolean flag = false;
+            for (int j = 0 ;j <arr.length-1-i;j++){
+                if (arr[j]>arr[j+1]){
+                    int temp=arr[j];
+                    arr[j]=arr[j+1];
+                    arr[j+1]=temp;
+                    flag=true;
+                }
+            }
+            if (!flag){
+                break;
+            }
+        }
+        System.out.println(Arrays.toString(arr));
+    }
+}
+
+~~~
+
+
+
+------
+
 ### 时间类LocalDate
 
 #### 计算x年x月x日到现在还有多少天
