@@ -3209,7 +3209,9 @@ public static void main(String[] args) {
 
 ------
 
-### 冒泡排序
+### 经典案例
+
+#### 冒泡排序
 
 >比对方法：左边比右边大就于右边交换位置
 
@@ -3232,14 +3234,14 @@ public class bubble_sort {
         for (int i = 0; i < arr.length-1; i++) {
             boolean flag = false;
             for (int j = 0 ;j <arr.length-1-i;j++){
-                if (arr[j]>arr[j+1]){
+                if (arr[j]>arr[j+1]){//前一个和后一个进行对比如果前面大于后面就进行交换
                     int temp=arr[j];
                     arr[j]=arr[j+1];
                     arr[j+1]=temp;
                     flag=true;
                 }
             }
-            if (!flag){
+            if (!flag){//如果一直没有变化提前结束程序
                 break;
             }
         }
@@ -3249,13 +3251,229 @@ public class bubble_sort {
 
 ~~~
 
+结果：
+
+~~~java
+[1, 2, 3, 4, 5, 10]
+
+进程已结束,退出代码0
+~~~
+
+------
+
+####  二分搜索
+
+>排列好的数组，从大到小
+>
+>除以二拿中间数于左右对比，比左边大就对右边重复操作，比右边小就对右边重复操作
+
+案例：
+
+~~~java
+package javaSE;
+//二分搜索
+public class Twopoint_search {
+    public static void main(String[] args) {
+        int[] arr = new int[]{1, 2, 3, 4 ,5, 6,7,8,9,10};
+        System.out.println(search(arr,10));
+        System.out.println(search2(arr,10));
+    }
+    public static int search(int[] arr,int target){
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == target) return i;
+        }
+        return -1;
+    }
+    public static int search2(int[] arr,int target){
+        int left = 0;
+        int right = arr.length-1;
+        while (left <= right){
+            int mid = (left + right) / 2;//取中间数
+            if (arr[mid] < target){
+                left = mid + 1;
+            }
+            else if (arr[mid] > target){
+                right = mid - 1;
+            }
+            else {
+                return mid;
+            }
+        }
+        return -1;
+    }
+}
+~~~
+
+结果：
+
+~~~java
+9
+9
+
+进程已结束,退出代码0
+
+~~~
+
+
+
+------
+
+#### 汉塔塔
+
+> 汉诺塔规则限制：
+>         一次只能移动一个盘子,大盘不能压小盘。
+
+动图演示：
+
+![](assets/汉塔塔.gif)
+
+案例：
+
+~~~java
+package javaSE;
+//❗ 汉诺塔规则限制：
+//一次只能移动 一个盘子
+//大盘不能压小盘
+public class Hantata {
+    public static void main(String[] args) {
+        hanoi('A','B','c',3);
+    }
+    private static void hanoi(char a,char b,char c,int n){
+        if (n == 1){
+            System.out.println(a + " --> " + c);
+        }else {
+            hanoi(a,c,b,n-1);//借用b为跳板，再次调用
+            System.out.println(a + " --> " + c);
+            hanoi(b,a,c,n-1);
+        }
+    }
+}
+~~~
+
+结果：
+
+~~~java
+A --> c
+A --> B
+c --> B
+A --> c
+B --> A
+B --> c
+A --> c
+    
+进程已结束,退出代码0
+~~~
+
+------
+
+#### 青蛙跳台阶
+
+>每次只能跳1阶或2阶，求跳n阶台阶的方案数
+
+案例：
+
+~~~java
+package javaSE;
+import java.util.Scanner;
+//青蛙跳台阶
+//每次只能跳1阶或2阶，求跳n阶台阶的方案数
+public class Frog_Steps {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("请输入台阶数：");
+        int n = scanner.nextInt();
+        System.out.println(F(n));
+        System.out.println(F2(n));
+    }
+    private static int F(int n){//方法一
+        int[] a = new int[n+1];
+        a[0] = 1;
+        a[1] = 1;//第零阶和第一阶的方法只有一种
+        for (int i = 2; i <= n; i++) {
+            a[i] = a[i-1] + a[i-2];
+        }//前一个台阶等于后两个台阶跳跃总和
+        return a[n];
+    }
+    private static int F2(int n){//方法二递归调用
+        if (n == 0 || n == 1) return 1;
+        return F2(n-1) + F2(n-2);
+    }
+}
+
+~~~
+
+结果：
+
+~~~java
+请输入台阶数：5
+8
+8
+
+进程已结束,退出代码0
+~~~
+
+------
+
+#### 回文串判断
+
+>回文串的含义是倒过来也是一样的含义
+>
+>例如：abcba
+
+案例：
+
+~~~java
+package javaSE;
+import java.util.Scanner;
+
+public class Palindrome_numbers {
+    public static void main(String[] args) {
+        System.out.println(test());
+    }
+    private static  boolean test(){
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("回文字判断,请输入一段英文：");
+        String str = scanner.nextLine();
+        char[] chars = str.toCharArray();//转换为字符数组
+        int i = 0,j = chars.length-1;//i为第一个字符，j为最后一个字符
+        while (i < j){
+            if (chars[i] != chars[j]){
+                return false;//不相等直接退出
+            }
+            i++;
+            j--;
+        }
+        return true;
+    }
+}
+
+~~~
+
+结果：
+
+~~~java
+回文字判断,请输入一段英文：
+abcsa
+false
+
+进程已结束,退出代码0
+
+回文字判断,请输入一段英文：
+abcba
+true
+
+进程已结束,退出代码0
+~~~
+
 
 
 ------
 
 ### 时间类LocalDate
 
-#### 计算x年x月x日到现在还有多少天
+#### 计算
+
+#### x年x月x日到现在还有多少天
 
 ~~~java
 import java.time.LocalDate;
