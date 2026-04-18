@@ -3920,3 +3920,486 @@ r:Range[from=3, to=4]
 | **为什么交换 3 和 4** | 因为区间的起点必须小于终点，否则逻辑错误 |
 | **好处**              | 自动保证对象的合法性，减少错误           |
 
+------
+
+## 泛型程序设计
+
+------
+
+### 泛型
+
+------
+
+为了统计学生成绩，要求设计一个Score对象，包括课程名称、课程号、课程成绩，但是成绩分为两种，一种是以`优秀、良好、合格` 来作为结果，还有一种就是 `60.0、75.5、92.5` 这样的数字分数，可能高等数学这门课是以数字成绩进行结算，而计算机网络实验这门课是以等级进行结算，这两种分数类型都有可能出现，那么现在该如何去设计这样的一个Score类呢？
+
+现在的问题就是，成绩可能是`String`类型，也可能是`Integer`类型，如何才能很好的去存可能出现的两种类型呢？
+
+#### 泛型类
+
+我们可以使用一个特殊的名字表示待定类型，在泛型类中，我们可以将这个待定类型添加到类名后，它通常也被称为**类型参数**（Type Parameter）泛型在定义时并不明确是什么类型，而是需要到使用时才会确定具体的类型。
+
+我们可以将一个类定义为一个泛型类：
+
+~~~java
+package javaSE.Generic;
+
+public class Score_G<T> {
+    String name;
+    String id;
+    T value;
+
+    public Score_G(String name, String id, T value) {
+        this.name = name;
+        this.id = id;
+        this.value = value;
+    }
+
+    public T getValue() {
+        return value;
+    }
+
+    public void setValue(T value) {
+        this.value = value;
+    }
+}
+~~~
+
+使用如下：
+
+~~~java
+public class Score_test {
+    public static void main(String[] args) {
+        Score s1 = new Score("计算机网络","abcd1234",95);//这里计算机网络的成绩评判是以分数来进行判断的，自动存入转换类型为：Integer
+        Score s2 = new Score("数据结构与算法","abcd5678","优秀");//这里数据结构与算法是以优秀、良好、合格来作为结果，自动存入转换类型为：String
+        Integer value1 = (Integer) s1.value;
+        String value2 = (String) s2.value;
+        System.out.println(value1);
+        System.out.println(value2);
+    }
+}
+~~~
+
+运行结果如下：
+
+~~~java
+95
+优秀
+~~~
+
+如果要让某个变量支持引用确定了任意类型的泛型，那么可以使用`?`通配符：
+
+```java
+public static void main(String[] args) {
+    Test<?> test = new Test<Integer>();
+    test = new Test<String>();
+  	Object o = test.value;    //但是注意，如果使用通配符，那么由于类型不确定，所以说具体类型同样会变成Object
+}
+```
+
+需要使用多个的话，可以定义多个：
+
+```java
+public class Test<A, B, C> {   //多个类型变量使用逗号隔开
+    public A a;
+    public B b;
+    public C c;
+}
+```
+
+那么在使用时，就需要将这三种类型都进行明确指定：
+
+```java
+public static void main(String[] args) {
+    Test<String, Integer, Character> test = new Test<>();  //使用钻石运算符可以省略其中的类型
+    test.a = "lbwnb";
+    test.b = 10;
+    test.c = '淦';
+}
+```
+
+------
+
+#### 泛型与多态
+
+不只是类，包括接口、抽象类，都是可以支持泛型的：
+
+```java
+public interface Study<T> {
+    T test();
+}
+```
+
+当子类实现此接口时，我们可以选择在实现类明确泛型类型，或是继续使用此泛型让具体创建的对象来确定类型：
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        A a = new A();
+        Integer i = a.test();
+    }
+
+    static class A implements Study<Integer> {   
+      	//在实现接口或是继承父类时，如果子类是一个普通类，那么可以直接明确对应类型
+        @Override
+        public Integer test() {
+            return null;
+        }
+    }
+}
+```
+
+或者是继续摆烂，依然使用泛型：
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        A<String> a = new A<>();
+        String i = a.test();
+    }
+
+    static class A<T> implements Study<T> {   
+      	//让子类继续为一个泛型类，那么可以不用明确
+        @Override
+        public T test() {
+            return null;
+        }
+    }
+}
+```
+
+继承也是同样的：
+
+```java
+static class A<T> {
+    
+}
+static class B extends A<String> {
+
+}
+```
+
+------
+
+#### 泛型方法
+
+除了泛型类以外，也可以定义泛型方法。
+
+当某个方法（无论是静态方法还是成员方法）需要接受的参数类型并不确定的时候，可以直接使用泛型来表示。
+
+~~~java
+package javaSE.Generic;
+
+public class Generic_methods {
+    public static void main(String[] args) {
+        String s = test("hello world");
+    }
+    private static <T> T test( T t){//在返回值类型前添加<>并填写泛型变量表示这个是一个泛型方法
+        return t;
+    }
+}
+~~~
+
+实际上泛型方法在很多工具类中也有，比如说Arrays的排序方法：
+
+```java
+Integer[] arr = {1, 4, 5, 2, 6, 3, 0, 7, 9, 8};
+Arrays.sort(arr, new Comparator<Integer>() {   
+  	//通过创建泛型接口的匿名内部类，来自定义排序规则，因为匿名内部类就是接口的实现类，所以说这里就明确了类型
+    @Override
+    public int compare(Integer o1, Integer o2) {   //这个方法会在执行排序时被调用（别人来调用我们的实现）
+        return 0;
+    }
+});
+```
+
+比如现在我们想要让数据从大到小排列，我们就可以自定义：
+
+```java
+public static void main(String[] args) {
+    Integer[] arr = {1, 4, 5, 2, 6, 3, 0, 7, 9, 8};
+    Arrays.sort(arr, new Comparator<Integer>() {
+        @Override
+        public int compare(Integer o1, Integer o2) {   //两个需要比较的数会在这里给出
+            return o2 - o1;    
+          	//compare方法要求返回一个int来表示两个数的大小关系，大于0表示大于，小于0表示小于
+          	//这里直接o2-o1就行，如果o2比o1大，那么肯定应该排在前面，所以说返回正数表示大于
+        }
+    });
+    System.out.println(Arrays.toString(arr));
+}
+```
+
+因为我们前面学习了Lambda表达式，像这种只有一个方法需要实现的接口，直接安排了：
+
+```java
+public static void main(String[] args) {
+    Integer[] arr = {1, 4, 5, 2, 6, 3, 0, 7, 9, 8};
+    Arrays.sort(arr, (o1, o2) -> o2 - o1);   //瞬间变一行，效果跟上面是一样的
+    System.out.println(Arrays.toString(arr));
+}
+```
+
+包括数组复制方法：
+
+```java
+public static void main(String[] args) {
+    String[] arr = {"AAA", "BBB", "CCC"};
+    String[] newArr = Arrays.copyOf(arr, 3);   //这里传入的类型是什么，返回的类型就是什么，也是用到了泛型
+    System.out.println(Arrays.toString(newArr));
+}
+```
+
+------
+
+#### 泛型的界限
+
+##### 上界
+
+案例：
+
+~~~java
+package javaSE.Generic;
+
+public class Generic_boundaries {
+    public static void main(String[] args) {
+        student<? extends Number> student = new student<>("张三","1001",100.4);//这里的T必须继承Number类
+        //? 表示任意类型,也可以有上限边界
+        System.out.println(student.value);
+    }
+}
+
+class student<T extends Number>{
+    //泛型类,泛型类中定义的泛型参数T必须继承Number类,Number类下面的子类才能作为T的类型，具体有：Integer,Double,Float,Long
+    String name;
+    String id;
+    T value;
+
+    public student(String name, String id, T value) {
+        this.name = name;
+        this.id = id;
+        this.value = value;
+    }
+}
+~~~
+
+上界关系如图：
+
+![](assets/上界.png)
+
+------
+
+##### 下界
+
+案例：
+
+~~~java
+package javaSE.Generic;
+
+public class Generic_nether {
+    public static void main(String[] args) {
+        student1<? super Number> student1 = new student1<>("张三","1001",100.4);//这里的T必须继承Number类,super Number 表示T的父类
+        Object object = student1.value;//这里不能用Number,因为T的父类是Object
+        Integer t = text(100);
+        System.out.println(t);
+    }
+    static <T extends Number> T text (T t){//泛型方法
+        return t;
+    }
+}
+class student1<T>{//super Number不能出现在泛型类中，只能出现在泛型方法中
+    String name;
+    String id;
+    T value;
+    public student1(String name, String id, T value) {
+        this.name = name;
+        this.id = id;
+        this.value = value;
+    }
+}
+~~~
+
+下界关系如图：
+
+![](assets/下界.png)
+
+------
+
+#### 类型擦除
+
+>类型擦除的含义是把泛型参数T擦除掉，变成Object
+
+案例：
+
+~~~java
+package javaSE.Generic;
+//类型擦除实际上是把泛型参数T擦除掉，变成Object
+public class Type_erase {
+    public static void main(String[] args) {
+        test<Integer> test = new test<>(100);//泛型参数T被擦除成Object
+        Integer t = test.value;//这里其实是强制转换的，因为T被擦除成Object，可以看成：test.value = (Integer)value;
+        System.out.println(t);
+
+        study<String> study = new study_impl<>();
+        String s = study.study("world");
+        System.out.println(s);
+    }
+    interface study<T>{
+        T study(T t);
+    }
+
+    static class study_impl<T> implements study<String>{
+        @Override
+        public String study(String t) {
+            return "hello" + t ;
+        }
+        /*
+        public Object study(Object s) {
+            return this.study((String) s);
+        }
+        */
+    }
+}
+class test<T>{
+    T value;
+    public test(T value) {
+        this.value = value;
+    }
+}
+//test类可以看成
+/*
+class test{
+    Object value;
+    public test(Object value) {
+        this.value = value;
+    }
+}
+ */
+~~~
+
+------
+
+#### 协变和逆变
+
+案例：
+
+~~~java
+package javaSE.Generic;
+
+public class CovarianceAndContravariance {
+    public static void main(String[] args) {
+        Text<Integer> text = new Text<>(10);
+        // 错误：泛型默认是【不变（Invariant）】
+        // Text<Integer> 和 Text<Number> 没有任何继承关系，不能直接赋值
+        // Text<Number> text1 = text;
+        /*
+        核心总结：
+        1. 不变(Invariant)：Text<Integer> 和 Text<Number> 毫无关系，不能互相赋值
+        2. 协变(Covariance)：? extends 父类 → 只能读，不能写
+        3. 逆变(Contravariance)：? super 子类 → 能写安全数据，读只能用 Object 接收
+        */
+
+        // 协变：? extends Number
+        Text<? extends Number> text1 = text;
+        // text1.value = 100; // 错误！协变泛型【禁止写入】，编译报错
+        System.out.println("协变读取："+text1.value);//读取成功
+
+        // 逆变：? super Number
+        Text<Object> text3 = new Text<>(10);
+        Text<? super Number> text2 = text3;
+
+        Object object = text2.value;   // 逆变只能用 Object 接收读取值
+        System.out.println("逆变读取（只能Object）："+object);
+        text2.value = 100;            // 逆变【可以安全写入】Number 及其子类
+        System.out.println("逆变写入成功："+text2.value);//写入成功
+
+
+        // 数组天然协变，但不安全！
+        String[] strings = { "AAA", "BBB" };
+        Object[] objects = strings;   // 编译通过（数组协变）
+        // objects[1] = 666;          // 运行时报错：ArrayStoreException
+    }
+
+    static class Text<T> {
+        T value;
+        public Text(T value) { this.value = value; }
+    }
+}
+/*
+协变（? extends T）
+只能读，不能写（除 null 外）
+读取出来的类型至少是 T 或其子类型
+用途：安全读取数据
+逆变（? super T）
+可以写入 T 及其子类
+读取时类型丢失，只能用 Object 接收
+用途：安全写入数据
+不变（无通配符，原生泛型）
+读写完全自由，类型严格匹配
+既可以读也可以写，类型最安全
+用途：通用读写场景
+ */
+~~~
+
+------
+
+#### 函数式接口
+
+##### Supplier供给型函数式接口
+
+>这个接口是专门用于供给使用的，其中只有一个get方法用于获取需要的对象。
+>
+>当函数只有一个返回值，并且需要返回前做一些操作时可以使用。
+
+案例：
+
+~~~java
+package javaSE.Generic;
+
+import java.util.function.Supplier;
+
+public class functional_interface {
+    public static void main(String[] args) {
+        student_name student_name = new student_name();
+        // Lambda 写法
+        student_name.takeName(()->{
+            System.out.println("开始获取名字");
+            return "张三";
+        });
+        System.out.println(student_name);
+        // 匿名内部类写法
+        student_name.takeName(new Supplier<String>() {
+            @Override
+            public String get() {
+                System.out.println("开始获取名字");
+                return "李四";
+            }
+        });
+        System.out.println(student_name);
+    }
+}
+class student_name{
+    String name;
+    public void takeName(Supplier<String> name){
+        this.name = name.get();
+    }
+
+    @Override
+    public String toString() {
+        return "student_name{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+~~~
+
+运行结果：
+
+~~~java
+开始获取名字
+student_name{name='张三'}
+开始获取名字
+student_name{name='李四'}
+
+进程已结束,退出代码0
+~~~
+
