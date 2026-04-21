@@ -4342,7 +4342,7 @@ public class CovarianceAndContravariance {
 
 ------
 
-#### 函数式接口
+#### 函数式接口(Java 8)
 
 ##### Supplier供给型函数式接口
 
@@ -4399,6 +4399,264 @@ class student_name{
 student_name{name='张三'}
 开始获取名字
 student_name{name='李四'}
+
+进程已结束,退出代码0
+~~~
+
+------
+
+##### Consumer消费型函数式接口
+
+>消费型函数,里面只有一个抽象方法 `accept(T t)`，有参数、无返回值，用于 “消费” 数据:用户可以调用后重写,并在输出时加入一些操作
+>
+>还有一个andThen方法就相当于串联,与accept方法输出的内容连接在一起
+
+案例:
+
+~~~java
+package javaSE.Generic;
+import java.util.function.Consumer;
+public class functional_interface {
+    public static void main(String[] args) {
+        student_name student_name = new student_name();
+        Consumer<String> consumer = name ->
+        {if (name.length() > 2){
+            System.out.println("名字太长");
+        }
+        else{
+            System.out.println("名字太短");
+        }
+        };
+        //方法引用,使用andThen方法，链式编程与上述操作连接在一起
+        consumer = consumer.andThen(name ->
+                System.out.println("我是后续操作，被串联到一起了")
+        );
+        student_name.useName(consumer);
+        student_name.useName(name ->
+                {if (name.length() > 2){
+                    System.out.println("名字太长");
+                }
+                else{
+                    System.out.println("名字太短");
+                }
+                System.out.println("使用名字："+name);});
+        student_name.useName(System.out::println);//lambda表达式方法引用
+    }
+}
+
+class student_name{
+    String name="李四";
+    public void useName(Consumer<String> name){
+        name.accept(this.name);
+    }
+
+    @Override
+    public String toString() {
+        return "student_name{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+~~~
+
+输出结果:
+
+~~~java
+名字太短
+我是后续操作，被串联到一起了
+名字太短
+使用名字：李四
+李四
+
+进程已结束,退出代码0
+~~~
+
+------
+
+#####  Function函数型函数式接口
+
+>这个接口消费一个对象，然后会向外供给一个对象(相当于Supplier与Consumer的结合)
+>
+>里面含有:apply方法,andThen方法,identity方法,compose方法
+
+案例:
+
+~~~java
+package javaSE.Generic;
+import java.util.function.Function;
+public class functional_interface {
+    public static void main(String[] args) {
+        student_name student_name = new student_name();
+        //Function 中的andThen方法：相当于转换所需要的类型
+        Function<String,byte[]> f = str -> str.getBytes();//将字符串转换成字节数组
+        Function<String, Integer> f2 = f.andThen(bytes -> bytes.length);//将字节数组转换成长度
+        Function<String,String> f3 = f2.andThen(i -> Integer.toHexString(i));//将长度转换成十六进制字符串
+
+        //Function 中identity方法:获取参数本身,就是传什么给什么
+        Function<String,String> function = Function.identity();
+        System.out.println(function.apply("真的听不懂了"));
+        //Function 中compose方法:颠倒执行顺序先执行里面的再执行外面的
+        Function<Integer, Integer> addOne = x -> x + 1;
+        Function<Integer, Integer> multiplyByTwo = x -> x * 2;
+        // 先加1,再乘2
+        Function<Integer, Integer> composed = multiplyByTwo.compose(addOne);
+        System.out.println(composed.apply(5)); // (5+1)*2 = 12
+
+        //Function 中apply方法:相当于给个值，返回需要的值的类型
+        student_name.nameLength(name -> {
+            return name.length();
+        });
+        student_name.nameLength(String::length);//方法引用
+    }
+}
+class student_name{
+    String name="李四";
+    public void nameLength(Function<String,Integer> function){
+        Integer apply = function.apply(name);
+        System.out.println("名字长度为："+apply);
+    }
+    @Override
+    public String toString() {
+        return "student_name{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+~~~
+
+结果:
+
+~~~java
+真的听不懂了
+12
+名字长度为：2
+名字长度为：2
+
+进程已结束,退出代码0
+~~~
+
+------
+
+##### Predicate断言型函数式接口
+
+> 接收一个参数，然后进行自定义判断并返回一个boolean结果。
+
+案例:
+
+~~~java
+package javaSE.Generic;
+
+import java.util.function.Predicate;
+
+public class functional_interface {
+    public static void main(String[] args) {
+        student_name student_name = new student_name();
+         //Predicate 中test方法:判断参数是否满足条件
+        student_name.nameInvalid(name -> name.length() >= 2);
+        //Predicate 中and方法:判断参数是否满足多个条件
+        Predicate<String> predicate = name -> name.length() >= 2;
+        predicate = predicate.and(name -> name.startsWith("张"));//还需要满足张姓
+        student_name.nameInvalid(predicate);
+    }
+}
+class student_name{
+    String name = "李四";
+    }
+    public void nameInvalid(Predicate<String> predicate){
+        boolean test = predicate.test(name);
+        System.out.println(test ? "名字合法" : "名字不合法" );
+    }
+    @Override
+    public String toString() {
+        return "student_name{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+~~~
+
+结果:
+
+~~~java
+名字合法
+名字不合法
+
+进程已结束,退出代码0
+~~~
+
+------
+
+#### 判空包装（Java 8）
+
+------
+
+>提供了一系列简便的方法帮助解决这个类可以很有效的处理空指针问题。
+
+案例：
+
+~~~java
+package javaSE.Generic;
+
+import java.util.Optional;
+public class Judge_empty_packaging {
+    public static void main(String[] args) {
+        test(null);
+        // isEmpty()判断字符串是否为空,这里的空是空串，而不是null
+        test("");
+        // Optional.ofNullable()判断字符串是否为空
+        test_Optional(null);
+        test_Optional("");
+
+        test_Optional2("听不懂不想听了");
+        test_Optional3("听不懂不想听了");
+        //orElse（）为空直接返回默认值
+        test_Optional3(null);
+
+        test_Optional4("听不懂不想听了");
+    }
+    private static void  test(String str){
+        //这里必须要写str == null 否则传入空串的时候，会报空指针异常
+        if (str == null) {
+            System.out.println("str为空");
+            return;
+        };
+        // isEmpty()判断字符串是否为空,这里的空是空串，而不是null
+        if (!str.isEmpty()){
+            System.out.println("字符串的长度为："+str.length());
+        }
+    }
+    // Optional.ofNullable(值)：将值包装为 Optional 对象，允许为 null，“判断 + 执行” 的是 ifPresent()！！！
+    private static void test_Optional(String str){
+        Optional.ofNullable(str).ifPresent(s -> System.out.println("字符串的长度为："+s.length()));
+    }
+    //get()方法,获取Optional对象中的值
+    //get() 若内部为 null 会抛 NoSuchElementException，不推荐使用。
+    private static void test_Optional2(String str){
+        String s = Optional.ofNullable(str).get();
+        System.out.println(s);
+    }
+    //orElse()方法,获取Optional对象中的值,如果为空则返回默认值
+    private static void test_Optional3(String str){
+        String s = Optional.ofNullable(str).orElse("默认值");
+        System.out.println(s);
+    }
+    //map()方法,获取Optional对象中的值并进行转换,如果为空则返回默认值
+    private static void test_Optional4(String str){
+        Integer i = Optional.ofNullable(str).map(s -> s.length()).orElse(0);
+        System.out.println(i);
+    }
+}
+~~~
+
+输出结果：
+
+~~~java
+str为空
+字符串的长度为：0
+听不懂不想听了
+听不懂不想听了
+默认值
+7
 
 进程已结束,退出代码0
 ~~~
