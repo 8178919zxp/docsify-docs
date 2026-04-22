@@ -4661,3 +4661,184 @@ str为空
 进程已结束,退出代码0
 ~~~
 
+------
+
+#### 判空包装增强（Java9/Java10）
+
+案例：
+
+~~~java
+package javaSE.Generic;
+
+import java.util.Optional;
+
+public class Judge_empty_packaging_MAX {
+    public static void main(String[] args) {
+        text_ifPresentOrElse(null);
+        text_ifPresentOrElse("abc");
+
+        test_or(null);
+        test_or("abc");
+
+//        test_orElseThrow(null);
+//        test_orElseThrow2(null);
+
+        test_filter("abc");
+        test_filter("n");
+    }
+
+    // 判断字符串是否为空, ifPresentOrElse方法双重判断，存在则执行第一个方法，不存在则执行第二个方法
+    private static void text_ifPresentOrElse(String str){
+        Optional.ofNullable(str).ifPresentOrElse(s -> {
+            System.out.println("存在！"+s);
+        },() -> {
+            System.out.println("不存在！");
+        });
+    }
+    //or方法传入数值为null时ifPresent判断是null直接执行Optional.of("不存在！")，否则直接打印
+    private static void test_or(String str){
+        Optional.ofNullable(str)
+                .or(() -> Optional.of("不存在！"))
+                .ifPresent(System.out::println);
+    }
+    //orElseThrow()方法传入数据为null直接报错
+    private static void test_orElseThrow(String str){
+        Optional.ofNullable(str).orElseThrow();
+    }
+    //orElseThrow()方法可以自定义报错异常
+    private static void test_orElseThrow2(String str){
+        Optional.ofNullable(str).orElseThrow(RuntimeException::new);
+    }
+    //filter方法在存在时返回Optional对象，不存在时返回Optional.empty()
+    private static void test_filter(String str){
+        System.out.println(Optional.ofNullable(str).filter(s -> s.length() > 2));
+    }
+}
+~~~
+
+输出结果：
+
+~~~java
+不存在！
+存在！abc
+不存在！
+abc
+Optional[abc]
+Optional.empty
+
+进程已结束,退出代码0
+~~~
+
+执行
+
+`test_orElseThrow(null);`时：
+
+~~~java
+Exception in thread "main" java.util.NoSuchElementException: No value present
+	at java.base/java.util.Optional.orElseThrow(Optional.java:377)
+	at javaSE.Generic.Judge_empty_packaging_MAX.test_orElseThrow(Judge_empty_packaging_MAX.java:36)
+	at javaSE.Generic.Judge_empty_packaging_MAX.main(Judge_empty_packaging_MAX.java:13)
+
+进程已结束,退出代码1
+~~~
+
+执行
+`test_orElseThrow2(null);`时：
+
+~~~java
+Exception in thread "main" java.lang.RuntimeException
+	at java.base/java.util.Optional.orElseThrow(Optional.java:403)
+	at javaSE.Generic.Judge_empty_packaging_MAX.test_orElseThrow2(Judge_empty_packaging_MAX.java:40)
+	at javaSE.Generic.Judge_empty_packaging_MAX.main(Judge_empty_packaging_MAX.java:14)
+
+进程已结束,退出代码1
+~~~
+
+------
+
+### 数据结构基础
+
+#### 线性表：顺序表
+
+>先创造一个默认列表结构，再扩容其内容。
+>
+>底层用**连续数组**实现的线性表，物理内存相邻，逻辑顺序也相邻。
+
+案例：
+
+~~~java
+package javaSE.Data_Structure;
+
+public class ArrayList<E>{
+    private int capacity = 10;//默认容量
+    private int size = 0;//列表大小
+    private Object[] array = new Object[capacity];//列表
+    //添加元素
+    public void add(E element,int index){
+        if(index > size || index < 0){//索引越界只能在0 ~ size之间
+            throw new IndexOutOfBoundsException("插入位置非法，合法的插入位置为：0 ~ "+size);//抛出索引越界异常
+        }
+        if (size >= capacity){//列表已满,扩容
+            int newcapacity = capacity + (capacity >> 1);//对capacity 右移一位就是1.5倍
+            Object[] newArray = new Object[newcapacity];
+            System.arraycopy(array,0,newArray,0,size);//拷贝原列表
+            array = newArray;
+            capacity = newcapacity;
+        }
+        //索引位置之后的元素后移
+        for (int i = size; i > index; i--) {
+            array[i] = array[i-1];
+        }
+        array[index] = element;
+        size++;
+    }
+    @SuppressWarnings("unchecked")//忽略编译警告
+    //删除元素
+    public E remove(int index){
+        if(index > size - 1 || index < 0){
+            throw new IndexOutOfBoundsException("删除位置非法，合法的删除位置为：0 ~ "+(size-1));
+        }
+        E e = (E) array[index];//获取被删除的元素
+        for (int i = index; i < size - 1; i++) {
+            array[i] = array[i+1];
+        }
+        size--;
+        return e;
+    }
+    //打印，列表转字符串
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < size; i++) {
+            sb.append(array[i]);
+            if(i != size-1){
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+}
+class Test_ArrayList {
+    public static void main(String[] args) {
+        ArrayList<String> list = new ArrayList<>();
+        list.add("a",0);
+        list.add("b",1);
+        list.add("c",2);
+        list.remove(1);
+        System.out.println(list);
+    }
+}
+~~~
+
+结果：
+
+~~~java
+[a,c]
+
+进程已结束,退出代码0
+~~~
+
+顺序表的插入和删除操作，其实就是：
+
+![](assets/顺序表增删结构图.png)
