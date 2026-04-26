@@ -4879,6 +4879,8 @@ false
 
 一般使用带头结点的比较多，方便数据操作。
 
+**element为数据样本，next为指针！！！**
+
 定义一个链表：
 
 ~~~java
@@ -5069,4 +5071,211 @@ b
 
 进程已结束,退出代码0
 ~~~
+
+------
+
+#### 线性表：栈
+
+>栈（也叫堆栈，Stack）是一种特殊的线性表，它只能在在表尾进行插入和删除操作
+
+如图所示：
+
+<img src="assets/栈1.png"  />
+
+只能在一端进行插入和删除，当依次插入1、2、3、4这四个元素后，连续进行四次删除操作，删除的顺序刚好相反：4、3、2、1，一般将其竖着看：
+
+![](assets/栈2.png)
+
+底部称为栈底，顶部称为栈顶，所有的操作只能在栈顶进行，也就是说，被压在下方的元素，只能等待其上方的元素出栈之后才能取出，就像我们往箱子里里面放的书一样，因为只有一个口取出里面的物品，所以被压在下面的书只能等上面的书被拿出来之后才能取出，这就是栈的思想，它是一种先进后出的数据结构（FILO，First In, Last Out）
+
+实现栈也是非常简单的，可以基于我们前面的顺序表或是链表，这里我们需要实现两个新的操作：
+
+- pop：出栈操作，从栈顶取出一个元素。
+- push：入栈操作，向栈中压入一个新的元素。
+
+栈可以使用顺序表实现，也可以使用链表实现，这里我们就使用链表，实际上使用链表会更加的方便，我们可以直接将头结点指向栈顶结点，而栈顶结点连接后续的栈内结点：
+
+![](assets/栈内部结构.png)
+
+当有新的元素入栈，只需要在链表头部插入新的结点即可，编写一下如下：
+
+~~~java
+public class LinkedStack<E> {
+
+    private final Node<E> head = new Node<>(null);   //大体内容跟链表类似
+
+    private static class Node<E> {
+        E element;
+        Node<E> next;
+
+        public Node(E element) {
+            this.element = element;
+        }
+    }
+}
+~~~
+
+入栈操作图：
+
+![](assets/入栈.png)
+
+代码：
+
+~~~java
+public void push(E element){
+    Node<E> node = new Node<>(element);   //直接创建新结点
+    node.next = head.next;    //新结点的下一个变成原本的栈顶结点
+    head.next = node;     //头结点的下一个改成新的结点
+}
+~~~
+
+出栈代码：
+
+~~~java
+public E pop(){
+  	if(head.next == null)   //如果栈已经没有元素了，那么肯定是没办法取的
+      	throw new NoSuchElementException("栈为空");
+    E e = head.next.element;   //先把待出栈元素取出来
+    head.next = head.next.next;   //直接让头结点的下一个指向下一个的下一个
+    return e;
+}
+~~~
+
+测试代码：
+
+~~~java
+class Test_LinkedStack{
+    public static void main(String[] args) {
+        LinkedStack<String> stack = new LinkedStack<>();
+        stack.push("a");
+        stack.push("b");
+        stack.push("c");
+        stack.push("d");
+        while (!stack.isEmpty()){
+            System.out.println(stack.pop());
+        }
+    }
+}
+~~~
+
+结果（栈的输入是从上到下堆积，删除结果是相反的）：
+~~~java
+d
+c
+b
+a
+
+进程已结束,退出代码0
+~~~
+
+------
+
+#### 线性表：队列
+
+>队列和栈都是一种特殊的表，栈是顺序进，逆序出，队列是队头进入，队尾出去。
+
+队列效果图：
+
+![](assets/队列.png)
+
+编写基础代码如下与栈和链表类似：
+
+~~~java
+public class LinkedStack<E> {
+    private final Node<E> head = new Node<>(null);   //大体内容跟链表类似
+    private static class Node<E> {
+        E element;
+        Node<E> next;
+
+        public Node(E element) {
+            this.element = element;
+        }
+    }
+}
+~~~
+
+入队示意图：
+
+![](assets/入队.png)
+
+
+
+入队函数offer如下：
+
+~~~java
+public void offer(E element){  //入队操作
+        Node<E> last = head;
+        while (last.next != null)   //入队直接丢到最后一个结点的屁股后面就行了
+            last = last.next;
+        last.next = new Node<>(element);
+    }
+~~~
+
+出队示意图：
+
+![](assets/出队.png)
+
+出队函数poll如下：
+
+~~~java
+public E poll(){   //出队操作
+        if(head.next == null)   //如果队列已经没有元素了，那么肯定是没办法取的
+            throw new NoSuchElementException("队列为空");
+        E e = head.next.element;
+        head.next = head.next.next;   //直接从队首取出
+        return e;
+    }
+~~~
+
+测试用例如下：
+
+~~~java
+class Test_LinkedQueue{
+    public static void main(String[] args) {
+        LinkedQueue<String> queue = new LinkedQueue<>();
+        queue.offer("a");
+        queue.offer("b");
+        queue.offer("c");
+        queue.offer("d");
+        while (!queue.isEmpty()){
+            System.out.println(queue.poll());
+        }
+    }
+}
+~~~
+
+结果（进入顺序：a,b,c,d  出去顺序：a,b,c,d）：
+~~~java
+a
+b
+c
+d
+进程已结束,退出代码0
+~~~
+
+------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
