@@ -4792,7 +4792,8 @@ public class ArrayList<E>{
         array[index] = element;
         size++;
     }
-    @SuppressWarnings("unchecked")//忽略编译警告
+    @SuppressWarnings("unchecked")
+    //忽略编译警告
     //删除元素
     public E remove(int index){
         if(index > size - 1 || index < 0){
@@ -4804,6 +4805,18 @@ public class ArrayList<E>{
         }
         size--;
         return e;
+    }
+    //获取元素
+    @SuppressWarnings("unchecked")
+    public E get(int index){
+        if(index > size - 1 || index < 0){
+            throw new IndexOutOfBoundsException("获取位置非法，合法的获取位置为：0 ~ "+(size-1));
+        }
+        return (E) array[index];
+    }
+    //判空
+    public boolean isEmpty(){
+        return size == 0;
     }
     //打印，列表转字符串
     public String toString(){
@@ -4819,13 +4832,187 @@ public class ArrayList<E>{
         return sb.toString();
     }
 }
+
 class Test_ArrayList {
     public static void main(String[] args) {
         ArrayList<String> list = new ArrayList<>();
         list.add("a",0);
         list.add("b",1);
         list.add("c",2);
-        list.remove(1);
+        list.remove(2);
+        System.out.println(list.get(1));
+        System.out.println(list);
+        System.out.println(list.isEmpty());
+    }
+}
+~~~
+
+结果：
+
+~~~java
+b
+[a,b]
+false
+
+进程已结束,退出代码0
+~~~
+
+顺序表的插入和删除操作，其实就是：
+
+![](assets/顺序表增删结构图.png)
+
+------
+
+#### 线性表：链表
+
+>链表和顺序表的区别为：链表的数据是一小节一小节的通过指针来连接，线性表则需要分配一整个内存地址来进行存储。
+>
+>链表的插入和删除比较方便，顺序表适合读取数据。
+
+链表分为两种形式一种为没有不带头结点的：
+
+![](assets/链表1.png)
+
+带头结点的：
+
+![](assets/链表2.png)
+
+一般使用带头结点的比较多，方便数据操作。
+
+定义一个链表：
+
+~~~java
+public class LinkedList<E> {
+  	//链表的头结点，用于连接之后的所有结点
+    private final Node<E> head = new Node<>(null);
+  	private int size = 0;   //当前的元素数量还是要存一下，方便后面操作
+    
+    private static class Node<E> {  //结点类，仅供内部使用
+        E element;   //每个结点都存放元素
+        Node<E> next;   //以及指向下一个结点的引用
+      
+      	public Node(E element) {
+            this.element = element;
+        }
+    }
+}
+~~~
+
+上面就定义了一个链表结构。
+
+接着设计链表的插入操作：
+
+![](assets/链表插入1.png)
+
+这时候需要6和2直接有一个指针：
+
+![](assets/链表插入2.png)
+
+继续更改将1指向2的指针更改为1指向6：
+
+![](assets/链表插入3.png)
+
+拉直就变为：
+
+![](assets/链表插入4.png)
+
+由此可以设计为：
+
+~~~java
+public void add(E element, int index){
+    if(index < 0 || index > size){
+            throw new IndexOutOfBoundsException(("插入位置非法，合法插入位置为：0 ~" + size));
+        }
+    Node<E> prev = head;   //先找到对应位置的前驱结点
+    for (int i = 0; i < index; i++) 
+        prev = prev.next;
+    Node<E> node = new Node<>(element);   //创建新的结点
+    node.next = prev.next;   //先让新的节点指向原本在这个位置上的结点
+    prev.next = node;   //然后让前驱结点指向当前结点
+    size++;   //完事之后一样的，更新size
+}
+~~~
+
+这里toString方法写为：
+
+~~~java
+public String toString(){
+        StringBuilder string = new StringBuilder();
+        Node<E> node = head.next;//从第一个结点开始，一个一个遍历，遍历一个就拼接到字符串上去
+        while (node != null){
+            string.append(node.element).append(" ");
+            node = node.next;
+        }
+        return string.toString();
+    }
+    public int size(){
+        return size;
+    }
+~~~
+
+测试插入方法add：
+
+~~~java
+class Test_LinkedList{
+    public static void main(String[] args) {
+        LinkedList<String> list = new LinkedList<>();
+        list.add("a",0);//这里每一个插入元素都是在0这个位置，也就是排列顺序为从后往前
+        list.add("b",0);
+        list.add("c",0);
+        System.out.println(list);
+
+    }
+}
+~~~
+
+结果：
+
+~~~java
+c b a 
+
+进程已结束,退出代码0
+~~~
+
+------
+
+删除方法如图：
+
+![](assets/链表删除1.png)
+
+要删除6需要将1指向2：
+
+![](assets/链表删除2.png)
+
+这里链表会自动帮我们回收没有用到的地址：
+
+![](assets/链表删除3.png)
+
+程序如下：
+
+~~~java
+public E remove(int index){
+    if(index < 0 || index > size - 1)   //同样的，先判断位置是否合法
+        throw new IndexOutOfBoundsException("删除位置非法，合法的删除位置为：0 ~ "+(size - 1));
+    Node<E> prev = head;
+    for (int i = 0; i < index; i++)   //同样需要先找到前驱结点
+        prev = prev.next;
+    E e = prev.next.element;   //先把待删除结点存放的元素取出来
+    prev.next = prev.next.next;  //可以删了
+    size--;   //记得size--
+    return e;
+}
+~~~
+
+测试删除方法：
+
+~~~java
+class Test_LinkedList{
+    public static void main(String[] args) {
+        LinkedList<String> list = new LinkedList<>();
+        list.add("a",0);
+        list.add("b",0);
+        list.add("c",0);
+        System.out.println(list.remove(2));
         System.out.println(list);
     }
 }
@@ -4834,11 +5021,52 @@ class Test_ArrayList {
 结果：
 
 ~~~java
-[a,c]
+a
+c b 
 
 进程已结束,退出代码0
 ~~~
 
-顺序表的插入和删除操作，其实就是：
+------
 
-![](assets/顺序表增删结构图.png)
+编写获取值get方法与获取链表大小的szie方法：
+
+~~~java
+public String toString(){
+        StringBuilder string = new StringBuilder();
+        Node<E> node = head.next;
+        while (node != null){
+            string.append(node.element).append(" ");
+            node = node.next;
+        }
+        return string.toString();
+    }
+    public int size(){
+        return size;
+    }
+~~~
+
+测试用例：
+
+~~~java
+class Test_LinkedList{
+    public static void main(String[] args) {
+        LinkedList<String> list = new LinkedList<>();
+        list.add("a",0);
+        list.add("b",0);
+        list.add("c",0);
+        System.out.println(list.get(1));
+        System.out.println(list.size());
+    }
+}
+~~~
+
+结果：
+
+~~~java
+b
+3
+
+进程已结束,退出代码0
+~~~
+
