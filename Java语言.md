@@ -12,7 +12,7 @@ public class HelloWorld {
 
 快捷键：
 
-- psum
+- psvm
 - sout
 
 其中public是访问修饰符
@@ -5824,3 +5824,1899 @@ false
 进程已结束,退出代码0
 ~~~
 
+------
+
+## 集合类
+
+集合类其实就是为了更好地组织、管理和操作数据而存在的，包括列表、集合、队列、映射等数据结构。
+
+集合跟数组一样，可以表示同样的一组元素，但是他们的相同和不同之处在于：
+
+1. 它们都是容器，都能够容纳一组元素。
+
+不同之处：
+
+1. 数组的大小是固定的，集合的大小是可变的。
+2. 数组可以存放基本数据类型，但集合只能存放对象。
+3. 数组存放的类型只能是一种，但集合可以有不同种类的元素
+
+集合类继承接口示意图：
+
+![](assets/集合类.png)
+
+------
+
+Collection接口的基本操作：
+
+~~~java
+public interface Collection<E> extends Iterable<E> {
+    //-------这些是查询相关的操作----------
+
+   	//获取当前集合中的元素数量
+    int size();
+
+    //查看当前集合是否为空
+    boolean isEmpty();
+
+    //查询当前集合中是否包含某个元素
+    boolean contains(Object o);
+
+    //返回当前集合的迭代器，我们会在后面介绍
+    Iterator<E> iterator();
+
+    //将集合转换为数组的形式
+    Object[] toArray();
+
+    //支持泛型的数组转换，同上
+    <T> T[] toArray(T[] a);
+
+    //-------这些是修改相关的操作----------
+
+    //向集合中添加元素，不同的集合类具体实现可能会对插入的元素有要求，
+  	//这个操作并不是一定会添加成功，所以添加成功返回true，否则返回false
+    boolean add(E e);
+
+    //从集合中移除某个元素，同样的，移除成功返回true，否则false
+    boolean remove(Object o);
+
+
+    //-------这些是批量执行的操作----------
+
+    //查询当前集合是否包含给定集合中所有的元素
+  	//从数学角度来说，就是看给定集合是不是当前集合的子集
+    boolean containsAll(Collection<?> c);
+
+    //添加给定集合中所有的元素
+  	//从数学角度来说，就是将当前集合变成当前集合与给定集合的并集
+  	//添加成功返回true，否则返回false
+    boolean addAll(Collection<? extends E> c);
+
+    //移除给定集合中出现的所有元素，如果某个元素在当前集合中不存在，那么忽略这个元素
+  	//从数学角度来说，就是求当前集合与给定集合的差集
+  	//移除成功返回true，否则false
+    boolean removeAll(Collection<?> c);
+
+    //Java8新增方法，根据给定的Predicate条件进行元素移除操作
+    default boolean removeIf(Predicate<? super E> filter) {
+        Objects.requireNonNull(filter);
+        boolean removed = false;
+        final Iterator<E> each = iterator();   //这里用到了迭代器，我们会在后面进行介绍
+        while (each.hasNext()) {
+            if (filter.test(each.next())) {
+                each.remove();
+                removed = true;
+            }
+        }
+        return removed;
+    }
+
+    //只保留当前集合中在给定集合中出现的元素，其他元素一律移除
+  	//从数学角度来说，就是求当前集合与给定集合的交集
+  	//移除成功返回true，否则false
+    boolean retainAll(Collection<?> c);
+
+    //清空整个集合，删除所有元素
+    void clear();
+
+
+    //-------这些是比较以及哈希计算相关的操作----------
+
+    //判断两个集合是否相等
+    boolean equals(Object o);
+
+    //计算当前整个集合对象的哈希值
+    int hashCode();
+
+    //与迭代器作用相同，但是是并行执行的，我们会在下一章多线程部分中进行介绍
+    @Override
+    default Spliterator<E> spliterator() {
+        return Spliterators.spliterator(this, 0);
+    }
+
+    //生成当前集合的流，我们会在后面进行讲解
+    default Stream<E> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+
+    //生成当前集合的并行流，我们会在下一章多线程部分中进行介绍
+    default Stream<E> parallelStream() {
+        return StreamSupport.stream(spliterator(), true);
+    }
+}
+~~~
+
+------
+
+### List列表
+
+![](assets/list结构.png)
+
+List是集合类型的一个分支，它的主要特性有：
+
+- 是一个有序的集合，插入元素默认是插入到尾部，按顺序从前往后存放，每个元素都有一个自己的下标位置
+- 列表中允许存在重复元素
+
+在List接口中，定义了列表类型需要支持的全部操作，List继承自SequencedCollection接口，此接口是Java 21新增接口，此前List接口直接继承自Collection接口此接口额外定义了获取第一个元素、最后一个元素，生成反向集合视图等功能，统一了所有有序集合的操作定义
+
+可以看到在List接口中，很多地方重新定义了一次Collection和SequencedCollection接口中定义的方法，虽然没有任何修改，但是这样做是为了更加明确方法的具体功能，当然，为了直观，我们这里就省略掉：
+
+~~~java
+//List是一个有序的集合类，每个元素都有一个自己的下标位置
+//List中可插入重复元素
+//针对于这些特性，扩展了Collection接口中一些额外的操作
+public interface List<E> extends Collection<E> {
+    ...
+   	
+    //将给定集合中所有元素插入到当前结合的给定位置上（后面的元素就被挤到后面去了，跟我们之前顺序表的插入是一样的）
+    boolean addAll(int index, Collection<? extends E> c);
+
+    ...
+
+   	//Java 8新增方法，可以对列表中每个元素都进行处理，并将元素替换为处理之后的结果
+    default void replaceAll(UnaryOperator<E> operator) {
+        Objects.requireNonNull(operator);
+        final ListIterator<E> li = this.listIterator();  //这里同样用到了迭代器
+        while (li.hasNext()) {
+            li.set(operator.apply(li.next()));
+        }
+    }
+
+    //对当前集合按照给定的规则进行排序操作，这里同样只需要一个Comparator就行了
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    default void sort(Comparator<? super E> c) {
+        Object[] a = this.toArray();
+        Arrays.sort(a, (Comparator) c);
+        ListIterator<E> i = this.listIterator();
+        for (Object e : a) {
+            i.next();
+            i.set((E) e);
+        }
+    }
+
+    ...
+
+    //-------- 这些是List中独特的位置直接访问操作 --------
+
+   	//获取对应下标位置上的元素
+    E get(int index);
+
+    //直接将对应位置上的元素替换为给定元素
+    E set(int index, E element);
+
+    //在指定位置上插入元素，就跟我们之前的顺序表插入是一样的
+    void add(int index, E element);
+
+    //移除指定位置上的元素
+    E remove(int index);
+
+
+    //------- 这些是List中独特的搜索操作 -------
+
+    //查询某个元素在当前列表中的第一次出现的下标位置
+    int indexOf(Object o);
+
+    //查询某个元素在当前列表中的最后一次出现的下标位置
+    int lastIndexOf(Object o);
+
+
+    //------- 这些是List的专用迭代器 -------
+
+    //迭代器我们会在下一个部分讲解
+    ListIterator<E> listIterator();
+
+    //迭代器我们会在下一个部分讲解
+    ListIterator<E> listIterator(int index);
+
+    //------- 这些是List的特殊转换 -------
+
+    //返回当前集合在指定范围内的子集
+    List<E> subList(int fromIndex, int toIndex);
+
+    ...
+}
+~~~
+
+------
+
+#### ArrayList
+
+可以看到，在List接口中，扩展了大量列表支持的操作，其中最突出的就是直接根据下标位置进行的增删改查操作。而在ArrayList中，底层就是采用数组实现的，跟我们之前的顺序表思路差不多：
+
+~~~java
+public class ArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable, java.io.Serializable
+{
+		
+    //默认的数组容量
+    private static final int DEFAULT_CAPACITY = 10;
+
+    ...
+
+    //存放数据的底层数组，这里的transient关键字我们会在后面I/O中介绍用途
+    transient Object[] elementData;
+
+    //记录当前数组元素数的
+    private int size;
+
+   	//这是ArrayList的其中一个构造方法
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity > 0) {
+            this.elementData = new Object[initialCapacity];   //根据初始化大小，创建当前列表
+        } else if (initialCapacity == 0) {
+            this.elementData = EMPTY_ELEMENTDATA;
+        } else {
+            throw new IllegalArgumentException("Illegal Capacity: "+
+                                               initialCapacity);
+        }
+    }
+  
+    //这是ArrayList的无参构造方法
+  	public ArrayList() {
+        this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+    }
+  
+  	...
+      
+   	public boolean add(E e) {
+        modCount++;   //用于后期判断是否出现并发异常，比如遍历时修改或是多线程操作（暂时忽略）
+        add(e, elementData, size);  //调用内部私有辅助方法实现插入操作，因为是尾插，index直接写size就行
+        return true;  //直接返回真插入成功
+    }
+  
+    private void add(E e, Object[] elementData, int s) {
+        if (s == elementData.length)   //首先判断长度是否超出当前内部数组容量
+            elementData = grow();   //超出那么就得扩容，扩容会对类的elementData进行重新赋值，下面介绍
+        elementData[s] = e;   //接着正常插入元素即可
+        size = s + 1;  //让size自增
+    }
+  
+    public void add(int index, E element) {
+        rangeCheckForAdd(index);   //先判断插入位置是否超出范围
+        modCount++;   //同上
+        final int s;
+        Object[] elementData;
+      	//看着有点绕，但实际上就是让s等于size，elementData等于类的elementData
+        //然后再比较长度是否已经一样，一样就扩容，跟上面思路是差不多的
+        if ((s = size) == (elementData = this.elementData).length)
+            elementData = grow();
+        System.arraycopy(elementData, index,
+                         elementData, index + 1,
+                         s - index);  //因为是中间插入，这里调用C++实现的数组移动操作，把位置让出来
+        elementData[index] = element;  //位置让出来之后，设置新元素
+        size = s + 1;  //让size自增
+    }
+  	
+  	...
+  
+    private Object[] grow() {
+        return grow(size + 1);   //调用内部其他方法实现，并制定扩容最小值为当前容量+1
+    }
+  
+  	private Object[] grow(int minCapacity) {
+        int oldCapacity = elementData.length;   //首先保存下现在的容量
+        if (oldCapacity > 0 || elementData != DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            //判断当前容量是否不为0（因为初始就是0，不为0一定被扩容过）
+            //然后计算新的容量，这里传入当前长度、最小扩容长度和推荐扩容长度三个参数，通过辅助方法衡量该如何扩容
+            int newCapacity = ArraysSupport.newLength(oldCapacity,
+                    minCapacity - oldCapacity, /* 最小扩容长度 */
+                    oldCapacity >> 1           /* 推荐扩容长度 */);
+            return elementData = Arrays.copyOf(elementData, newCapacity);  //得到最终扩容大小，创建新数组
+        } else {
+            //这里相当于现在容量为0，也就是初始状态，此时会直接创建一个容量为10的新数组
+            //注意这里需要取minCapacity和默认容量的最大值，因为grow不仅仅在单个插入时会调用，批量插入的时候也会调用，有可能出现批量插入20个的情况，那么初始容量就装不下了
+            return elementData = new Object[Math.max(DEFAULT_CAPACITY, minCapacity)];
+        }
+    }
+}
+~~~
+
+其中具体的ArrayList扩容辅助类定义如下：
+
+~~~java
+		//默认的列表最大长度为Integer.MAX_VALUE - 8
+    //因为在部分JVM的C++实现中，在数组的对象头中有一个_length字段，用于记录数组的长度
+    //所以这个8（保守估计，不一定是）就是存了数组_length字段（这个只做了解就行）
+    public static final int SOFT_MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
+
+    public static int newLength(int oldLength, int minGrowth, int prefGrowth) {
+        //计算新的长度，因为minGrowth和prefGrowth谁更大不确定，需要进行比较，然后得到新的长度
+        int prefLength = oldLength + Math.max(minGrowth, prefGrowth);
+        //接着比较新的长度是否已经超出数组允许的最大长度了
+        if (0 < prefLength && prefLength <= SOFT_MAX_ARRAY_LENGTH) {
+            return prefLength;  //没有直接返回
+        } else {
+            // 如果超出最大长度，需要进一步处理
+            return hugeLength(oldLength, minGrowth);
+        }
+    }
+
+		private static int hugeLength(int oldLength, int minGrowth) {
+        //先看看现在需要的最小长度，因为走到这里有可能是因为prefLength过长，但并不代表就真的需要这么长，因为prefLength有可能加的是prefGrowth，不一定是最小值
+        int minLength = oldLength + minGrowth;  
+        if (minLength < 0) { // 如果加出来最小长度已经小于0了，那包是超过int最大值了（前面二进制章节有介绍为什么）
+            throw new OutOfMemoryError(   //直接无情抛异常
+                "Required array length " + oldLength + " + " + minGrowth + " is too large");
+        } else if (minLength <= SOFT_MAX_ARRAY_LENGTH) {  //如果在最大长度允许范围内
+            return SOFT_MAX_ARRAY_LENGTH;   //直接给最大的
+        } else {
+            return minLength;  
+            //这种情况相当于在SOFT_MAX_ARRAY_LENGTH和int最大值之间，没法了，只能直接返回
+            //虽然有些JVM会可能直接抛出异常，但是可以抱着试试的心态搞一下
+        }
+    }
+~~~
+
+所以Java提供的ArrayList，默认情况下内部就是一个空的数组，需要使用时候会变成初始值10（或初始批量插入的长度）后续在单个插入时，如果容量不够，会自动按照1.5倍进行扩容，直到最大限制。如果是后续批量插入，则根据情况而定。
+
+一般的，如果要使用一个集合类，会使用接口的引用：
+
+~~~java
+public static void main(String[] args) {
+    List<String> list = new ArrayList<>();   //使用接口的引用来操作具体的集合类实现，是为了方便日后如果我们想要更换不同的集合类实现，而且接口中本身就已经定义了主要的方法，所以说没必要直接用实现类
+    list.add("科技与狠活");   //使用add添加元素
+  	list.add("上头啊");
+    System.out.println(list);   //打印集合类，可以得到一个非常规范的结果
+}
+~~~
+
+结果展示：
+
+~~~java
+[科技与狠活,上头啊]
+~~~
+
+集合的各种功能我们都可以来测试一下，特别注意一下，我们在使用Integer时，要注意传参问题：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>();
+    list.add(10);   //添加Integer的值10
+    list.remove((Integer) 10);   //注意，不能直接用10，默认情况下会认为传入的是int类型值，删除的是下标为10的元素，我们这里要删除的是刚刚传入的值为10的Integer对象
+    System.out.println(list);   //可以看到，此时元素成功被移除
+}
+```
+
+那要是这样写呢？
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>();
+    list.add(new Integer(10));   //添加的是一个对象
+    list.remove(new Integer(10));   //删除的是另一个对象
+    System.out.println(list);
+}
+```
+
+可以看到，结果依然是删除成功，这是因为集合类在删除元素时，只会调用`equals`方法进行判断是否为指定元素，而不是进行等号判断，所以说一定要注意，如果两个对象使用`equals`方法相等，那么集合中就是相同的两个对象：
+
+```java
+//ArrayList源码部分
+public boolean remove(Object o) {
+    if (o == null) {
+        ...
+    } else {
+        for (int index = 0; index < size; index++)
+            if (o.equals(elementData[index])) {   //这里只是对两个对象进行equals判断
+                fastRemove(index);
+                return true;  //只要判断成功，直接认为就是要删除的对象，删除就完事
+            }
+    }
+    return false;
+}
+```
+
+列表中允许存在相同元素，所以说我们可以添加两个一模一样的：
+
+```java
+public static void main(String[] args) {
+    List<String> list = new ArrayList<>();
+    String str = "哟唉嘛干你";
+    list.add(str);
+    list.add(str);
+    System.out.println(list);
+}
+```
+
+结果展示：
+
+~~~java
+[哟唉嘛干你,哟唉嘛干你]
+~~~
+
+注意这里删除只会删除排在前面的元素：
+
+~~~java
+list.remove(str);//输出结果：[哟唉嘛干你]
+~~~
+
+集合类是支持嵌套使用的，一个集合中可以存放多个集合，套娃嘛，谁不会：
+
+```java
+public static void main(String[] args) {
+    List<List<String>> list = new LinkedList<>();
+    list.add(new LinkedList<>());   //集合中的每一个元素就是一个集合，这个套娃是可以一直套下去的
+    System.out.println(list.get(0).isEmpty());
+}
+```
+
+在Arrays工具类中，我们可以快速生成一个只读的List：
+
+```java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");   //非常方便
+    System.out.println(list);
+}
+```
+
+注意，这个生成的List是只读的，不能进行修改操作，只能使用获取内容相关的方法，否则抛出 UnsupportedOperationException 异常。要生成正常使用的，我们可以将这个只读的列表作为参数传入：
+
+```java
+public static void main(String[] args) {
+    List<String> list = new ArrayList<>(Arrays.asList("A", "B", "C"));
+    System.out.println(list);
+}
+```
+
+当然，也可以利用类中的代码块实现：
+
+```java
+public static void main(String[] args) {
+    List<String> list = new ArrayList<String>() {{   //使用匿名内部类（匿名内部类在Java8无法使用钻石运算符，但是之后的版本可以）
+            add("A");
+            add("B");
+            add("C");
+    }};
+    System.out.println(list);
+}
+```
+
+------
+
+#### LinkedList
+
+LinkedList同样是List的实现类，只不过它是采用的链式实现，也就是之前的链表，只不过它是一个双向链表，也就是同时保存两个方向：
+
+```java
+public class LinkedList<E>
+    extends AbstractSequentialList<E>
+    implements List<E>, Deque<E>, Cloneable, java.io.Serializable
+{
+    transient int size = 0;
+
+    //引用首结点
+    transient Node<E> first;
+    //引用尾结点
+    transient Node<E> last;
+
+    //构造方法，很简单，直接创建就行了
+    public LinkedList() {
+    }
+  
+  	...
+      
+    private static class Node<E> {   //内部使用的结点类
+        E item;
+        Node<E> next;   //不仅保存指向下一个结点的引用，还保存指向上一个结点的引用
+        Node<E> prev;
+
+        Node(Node<E> prev, E element, Node<E> next) {
+            this.item = element;
+            this.next = next;
+            this.prev = prev;
+        }
+    }
+  
+    public boolean add(E e) {
+        linkLast(e);   //调用内部方法进行尾部连接
+        return true;
+    }
+  
+  	void linkLast(E e) {
+        final Node<E> l = last;   //拿到当前尾结点
+        final Node<E> newNode = new Node<>(l, e, null);  //创建新结点
+        last = newNode;   //更新尾结点
+        if (l == null)  
+            first = newNode;  //如果当前尾结点为空说明是个空集合，将此结点同时作为首结点
+        else
+            l.next = newNode;  //否则更新当前尾结点的next引用，把新的结点串起来
+        size++;   //让size自增
+        modCount++;
+    }
+  
+    E unlink(Node<E> x) {
+        final E element = x.item;  //拿到当前的待删除结点元素
+        final Node<E> next = x.next;   //拿到前后结点
+        final Node<E> prev = x.prev;
+
+        if (prev == null) {
+            first = next;   //如果前驱结点为空，说明这个结点就是就是第一个，直接让first等于next就行了
+        } else {
+            prev.next = next;  //否则让前驱结点直接去连接下一个
+            x.prev = null;   //取消当前结点对于前驱结点的引用，便于JVM自动垃圾回收
+        }
+
+        if (next == null) {  //同上，处于后驱结点，操作差不多
+            last = prev;
+        } else {
+            next.prev = prev;
+            x.next = null;
+        }
+
+        x.item = null;   //前后处理干净，然后把待删除结点对于元素的引用取消，彻底废弃掉此结点
+        size--;   //让size自减
+        modCount++;
+        return element;  //返回被删元素
+    }
+  
+    ...
+}
+```
+
+LinkedList的使用和ArrayList的使用几乎相同，各项操作的结果也是一样的，在什么使用使用ArrayList和LinkedList，需要结合具体的场景来决定，尽可能的扬长避短。
+
+- **ArrayList：** 更适合随机访问，因为可以直接读取某个下标的元素。插入则性能较差，因为需要移动一组元素，让出空间。
+- **LinkedList：** 不适合随机访问，因为无法直接获取某个元素，只能遍历查找。插入性能较好，因为可以直接改变链表中结点的指向。
+
+如果更多的是对数据进行插入，选择LinkedList，如果更多是对于数据的查询，选择ArrayList。
+
+------
+
+### 迭代器
+
+集合类都是支持`foreach`语法的:
+
+~~~java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");
+    for (String s : list) {   //集合类同样支持这种语法
+        System.out.println(s);
+    }
+}
+~~~
+
+可以看到文件被编译后的效果：
+
+~~~java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");
+    Iterator var2 = list.iterator();   //这里使用的是List的迭代器在进行遍历操作
+
+    while(var2.hasNext()) {
+        String s = (String)var2.next();
+        System.out.println(s);
+    }
+
+}
+~~~
+
+Iterator迭代器：
+
+~~~java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");
+  	//通过调用iterator方法快速获取当前集合的迭代器
+  	//Iterator迭代器本身也是一个接口，由具体的集合实现类来根据情况实现
+    Iterator<String> iterator = list.iterator();
+}
+~~~
+
+源码：
+
+~~~java
+public interface Iterator<E> {
+    //看看是否还有下一个元素
+    boolean hasNext();
+
+    //遍历当前元素，并将下一个元素作为待遍历元素
+    E next();
+
+    //移除上一个被遍历的元素（某些集合不支持这种操作）
+    default void remove() {
+        throw new UnsupportedOperationException("remove");
+    }
+
+    //对剩下的元素进行自定义遍历操作
+    default void forEachRemaining(Consumer<? super E> action) {
+        Objects.requireNonNull(action);
+        while (hasNext())
+            action.accept(next());
+    }
+}
+~~~
+
+在ArrayList和LinkedList中，迭代器的实现也不同，比如ArrayList就是直接按下标访问：
+
+```java
+public E next() {
+    ...
+    cursor = i + 1;   //移动指针
+    return (E) elementData[lastRet = i];  //直接返回指针所指元素
+}
+```
+
+LinkedList就是不断向后寻找结点：
+
+```java
+public E next() {
+    ...
+    next = next.next;   //向后继续寻找结点
+    nextIndex++;
+    return lastReturned.item;  //返回结点内部存放的元素
+}
+```
+
+虽然这两种列表的实现不同，遍历方式也不同，但是都是按照迭代器的标准进行了实现，所以说，我们想要遍历一个集合中所有的元素，那么就可以直接使用迭代器来完成，而不需要关心集合类是如何实现，我们该怎么去遍历：
+
+```java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");
+    Iterator<String> iterator = list.iterator();
+    while (iterator.hasNext()) {    //每次循环一定要判断是否还有元素剩余
+        System.out.println(iterator.next());  //如果有就可以继续获取到下一个元素
+    }
+}
+```
+
+注意，迭代器的使用是一次性的，用了之后就不能用了，如果需要再次进行遍历操作，那么需要重新生成一个迭代器对象。为了简便，我们可以直接使用`foreach`语法来快速遍历集合类，效果是完全一样的：
+
+```java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");
+    for (String s : list) {
+        System.out.println(s);
+    }
+}
+```
+
+在Java8提供了一个支持Lambda表达式的forEach方法，这个方法接受一个Consumer，也就是对遍历的每一个元素进行的操作：
+
+```java
+public static void main(String[] args) {
+    List<String> list = Arrays.asList("A", "B", "C");
+    list.forEach(System.out::println);
+    //这里有一个常见误区，lambda里面禁止修改外部的非final变量
+}
+```
+
+这个效果跟上面的写法是完全一样的，因为forEach方法内部本质上也是迭代器在处理，这个方法是在Iterable接口中定义的：
+
+```java
+default void forEach(Consumer<? super T> action) {
+    Objects.requireNonNull(action);
+    for (T t : this) {   //foreach语法遍历每一个元素
+        action.accept(t);   //调用Consumer的accept来对每一个元素进行消费
+    }
+}
+```
+
+![](assets/迭代器.png)
+
+定义内容：
+
+~~~java
+//注意这个接口是集合接口的父接口，不要跟之前的迭代器接口搞混了
+public interface Iterable<T> {
+    //生成当前集合的迭代器，在Collection接口中重复定义了一次
+    Iterator<T> iterator();
+
+    //Java8新增方法，因为是在顶层接口中定义的，因此所有的集合类都有这个方法
+    default void forEach(Consumer<? super T> action) {
+        Objects.requireNonNull(action);
+        for (T t : this) {
+            action.accept(t);
+        }
+    }
+
+    //这个方法会在多线程部分中进行介绍，暂时不做讲解
+    default Spliterator<T> spliterator() {
+        return Spliterators.spliteratorUnknownSize(iterator(), 0);
+    }
+}
+~~~
+
+得益于Iterable提供的迭代器生成方法，实际上只要是实现了迭代器接口的类（我们自己写的都行），都可以使用`foreach`语法：
+
+```java
+public class Test implements Iterable<String>{   //这里我们随便写一个类，让其实现Iterable接口
+    @Override
+    public Iterator<String> iterator() {
+        return new Iterator<String>() {   //生成一个匿名的Iterator对象
+            @Override
+            public boolean hasNext() {   //这里随便写的，直接返回true，这将会导致无限循环
+                return true;
+            }
+
+            @Override
+            public String next() {   //每次就直接返回一个字符串吧
+                return "测试";
+            }
+        };
+    }
+}
+```
+
+可以看到，直接就支持这种语法了，虽然我们这个是自己写的，并不是集合类：
+
+```java
+public static void main(String[] args) {
+    Test test = new Test();
+    for (String s : test) {
+        System.out.println(s);
+    }
+}
+```
+
+输出结果：
+
+~~~java
+测试
+测试
+...
+测试
+...
+~~~
+
+------
+
+#### ListIterator
+
+我们这里再来介绍一下ListIterator，这个迭代器是针对于List的强化版本，增加了更多方便的操作，因为List是有序集合，所以它支持两种方向的遍历操作，不仅能从前向后，也可以从后向前：
+
+```java
+public interface ListIterator<E> extends Iterator<E> {
+    //原本就有的
+    boolean hasNext();
+
+    //原本就有的
+    E next();
+
+    //查看前面是否有已经遍历的元素
+    boolean hasPrevious();
+
+    //跟next相反，这里是倒着往回遍历
+    E previous();
+
+    //返回下一个待遍历元素的下标
+    int nextIndex();
+
+    //返回上一个已遍历元素的下标
+    int previousIndex();
+
+    //原本就有的
+    void remove();
+
+    //将上一个已遍历元素修改为新的元素
+    void set(E e);
+
+    //在遍历过程中，插入新的元素到当前待遍历元素之前
+    void add(E e);
+}
+```
+
+我们来测试一下吧：
+
+```java
+public static void main(String[] args) {
+    List<String> list = new ArrayList<>(Arrays.asList("A", "B", "C"));
+    ListIterator<String> iterator = list.listIterator();
+    iterator.next();   //此时得到A
+    iterator.set("X");  //将A原本位置的上的元素设定为成新的
+    System.out.println(list);
+}
+```
+
+输出结果：
+
+~~~java
+[X,B,C]
+~~~
+
+------
+
+#### Queue和Deque
+
+LinkedList除了可以直接当做列表使用之外，还可以当做其他的数据结构使用，可以看到它不仅仅实现了List接口：
+
+~~~java
+public class LinkedList<E>
+    extends AbstractSequentialList<E>
+    implements List<E>, Deque<E>, Cloneable, java.io.Serializable
+{
+~~~
+
+队列接口，它扩展了大量队列相关操作：
+
+~~~java
+public interface Queue<E> extends Collection<E> {
+    //队列的添加操作，是在队尾进行插入（只不过List也是一样的，默认都是尾插）
+  	//如果插入失败，会直接抛出异常
+    boolean add(E e);
+
+    //同样是添加操作，但是插入失败不会抛出异常
+    boolean offer(E e);
+
+    //移除队首元素，但是如果队列已经为空，那么会抛出异常
+    E remove();
+
+   	//同样是移除队首元素，但是如果队列为空，会返回null
+    E poll();
+
+    //仅获取队首元素，不进行出队操作，但是如果队列已经为空，那么会抛出异常
+    E element();
+
+    //同样是仅获取队首元素，但是如果队列为空，会返回null
+    E peek();
+}
+~~~
+
+可以直接将一个LinkedList当做一个队列来使用：
+
+```java
+public static void main(String[] args) {
+    Queue<String> queue = new LinkedList<>();   //当做队列使用，还是很方便的
+    queue.offer("AAA");
+    queue.offer("BBB");
+    System.out.println(queue.poll());
+    System.out.println(queue.poll());
+}
+```
+
+输出结果：
+
+~~~java
+AAA
+BBB
+~~~
+
+双端队列允许在队列的两端进行入队和出队操作：
+
+![](assets/双端队列1.png)
+
+![](assets/双端队列2.png)
+
+利用这种特性，双端队列既可以当做普通队列使用，也可以当做栈来使用，我们来看看Java中是如何定义的Deque双端队列接口的：
+
+```java
+//在双端队列中，所有的操作都有分别对应队首和队尾的
+public interface Deque<E> extends Queue<E> {
+    //在队首进行插入操作
+    void addFirst(E e);
+
+    //在队尾进行插入操作
+    void addLast(E e);
+		
+  	//不用多说了吧？
+    boolean offerFirst(E e);
+    boolean offerLast(E e);
+
+    //在队首进行移除操作
+    E removeFirst();
+
+    //在队尾进行移除操作
+    E removeLast();
+
+    //不用多说了吧？
+    E pollFirst();
+    E pollLast();
+
+    //获取队首元素
+    E getFirst();
+
+    //获取队尾元素
+    E getLast();
+
+		//不用多说了吧？
+    E peekFirst();
+    E peekLast();
+
+    //从队列中删除第一个出现的指定元素
+    boolean removeFirstOccurrence(Object o);
+
+    //从队列中删除最后一个出现的指定元素
+    boolean removeLastOccurrence(Object o);
+
+    // *** 队列中继承下来的方法操作是一样的，这里就不列出了 ***
+
+    ...
+
+    // *** 栈相关操作已经帮助我们定义好了 ***
+
+    //将元素推向栈顶
+    void push(E e);
+
+    //将元素从栈顶出栈
+    E pop();
+
+
+    // *** 集合类中继承的方法这里也不多种介绍了 ***
+
+    ...
+
+    //生成反向迭代器，这个迭代器也是单向的，但是是next方法是从后往前进行遍历的
+    Iterator<E> descendingIterator();
+
+}
+```
+
+我们可以来测试一下，比如我们可以直接当做栈来进行使用：
+
+```java
+public static void main(String[] args) {
+    Deque<String> deque = new LinkedList<>();
+    deque.push("AAA");
+    deque.push("BBB");
+    System.out.println(deque.pop());
+    System.out.println(deque.pop());
+}
+```
+
+输出结果：
+
+~~~java
+BBB
+AAA
+~~~
+
+可以看到，得到的顺序和插入顺序是完全相反的，其实只要理解了前面讲解的数据结构，就很简单了。我们来测试一下反向迭代器和正向迭代器：
+
+~~~java
+public static void main(String[] args) {
+    Deque<String> deque = new LinkedList<>();
+    deque.addLast("AAA");
+    deque.addLast("BBB");
+    
+    Iterator<String> descendingIterator = deque.descendingIterator();
+    System.out.println(descendingIterator.next());
+
+    Iterator<String> iterator = deque.iterator();
+    System.out.println(iterator.next());
+}
+~~~
+
+可以看到，正向迭代器和反向迭代器的方向是完全相反的。
+
+当然，除了LinkedList实现了队列接口之外，还有其他的实现类，但是并不是很常用，这里做了解就行了：
+
+```java
+public static void main(String[] args) {
+    Deque<String> deque = new ArrayDeque<>();   //数组实现的栈和队列
+    Queue<String> queue = new PriorityQueue<>();  //优先级队列
+}
+```
+
+这里需要介绍一下优先级队列，优先级队列可以根据每一个元素的优先级，对出队顺序进行调整，默认情况按照自然顺序：
+
+```java
+public static void main(String[] args) {
+    Queue<Integer> queue = new PriorityQueue<>();
+    queue.offer(10);
+    queue.offer(4);
+    queue.offer(5);
+    System.out.println(queue.poll());
+    System.out.println(queue.poll());
+    System.out.println(queue.poll());
+}
+//输出结果：10，5，4
+```
+
+------
+
+### Set集合
+
+Set集合，这种集合类型比较特殊，我们先来看看Set的定义：
+
+```java
+public interface Set<E> extends Collection<E> {
+    // Set集合中基本都是从Collection直接继承过来的方法，只不过对这些方法有更加特殊的定义
+    int size();
+    boolean isEmpty();
+    boolean contains(Object o);
+    Iterator<E> iterator();
+    Object[] toArray();
+    <T> T[] toArray(T[] a);
+
+    //添加元素只有在当前Set集合中不存在此元素时才会成功，如果插入重复元素，那么会失败
+    boolean add(E e);
+
+    //这个同样是删除指定元素
+    boolean remove(Object o);
+
+    boolean containsAll(Collection<?> c);
+
+    //同样是只能插入那些不重复的元素
+    boolean addAll(Collection<? extends E> c);
+  
+    boolean retainAll(Collection<?> c);
+    boolean removeAll(Collection<?> c);
+    void clear();
+    boolean equals(Object o);
+    int hashCode();
+
+    //这个方法我们同样会放到多线程中进行介绍
+    @Override
+    default Spliterator<E> spliterator() {
+        return Spliterators.spliterator(this, Spliterator.DISTINCT);
+    }
+}
+```
+
+我们发现接口中定义的方法都是Collection中直接继承的，因此，Set支持的功能其实也就和Collection中定义的差不多，只不过：
+
+- 不允许出现重复元素
+- 不支持随机访问（不允许通过下标访问）
+
+首先认识一下HashSet，它的底层就是采用哈希表实现的（我们在这里先不去探讨实现原理，因为底层实质上是借用的一个HashMap在实现，这个需要我们学习了Map之后再来讨论）我们可以非常高效的从HashSet中存取元素，我们先来测试一下它的特性：
+
+```java
+public static void main(String[] args) {
+    Set<String> set = new HashSet<>();
+    System.out.println(set.add("AAA"));   //这里我们连续插入两个同样的字符串
+    System.out.println(set.add("AAA"));
+    System.out.println(set);   //可以看到，最后实际上只有一个成功插入了
+}
+//输出结果：true，false，[AAA]
+```
+
+在Set接口中并没有定义支持指定下标位置访问的添加和删除操作，我们只能简单的删除Set中的某个对象：
+
+```java
+public static void main(String[] args) {
+    Set<String> set = new HashSet<>();
+    System.out.println(set.add("AAA"));
+    System.out.println(set.remove("AAA"));
+    System.out.println(set);
+}
+```
+
+由于底层采用哈希表实现，所以说无法维持插入元素的顺序：
+
+```java
+public static void main(String[] args) {
+    Set<String> set = new HashSet<>();
+    set.addAll(Arrays.asList("A", "0", "-", "+"));
+    System.out.println(set);
+}
+//输出结果：[0,A,+,-]
+```
+
+那要是我们就是想要使用维持顺序的Set集合呢？我们可以使用LinkedHashSet，LinkedHashSet底层维护的不再是一个HashMap，而是LinkedHashMap，它能够在插入数据时利用链表自动维护顺序，因此这样就能够保证我们插入顺序和最后的迭代顺序一致了。
+
+```java
+public static void main(String[] args) {
+    Set<String> set = new LinkedHashSet<>();
+    set.addAll(Arrays.asList("A", "0", "-", "+"));
+    System.out.println(set);
+}
+//输出结果：[A,0,-,+]
+```
+
+还有一种Set叫做TreeSet，它会在元素插入时进行排序：
+
+```java
+public static void main(String[] args) {
+    TreeSet<Integer> set = new TreeSet<>();
+    set.add(1);
+    set.add(3);
+    set.add(2);
+    System.out.println(set);
+}
+//输出结果：[1,2,3]
+```
+
+可以看到最后得到的结果并不是我们插入顺序，而是按照数字的大小进行排列。当然，我们也可以自定义排序规则：
+
+```java
+public static void main(String[] args) {
+    TreeSet<Integer> set = new TreeSet<>((a, b) -> b - a);  //同样是一个Comparator
+    set.add(1);
+    set.add(3);
+    set.add(2);
+    System.out.println(set);
+}
+//输出结果：[3,2,1]
+```
+
+------
+
+### Map映射
+
+映射指两个元素的之间相互“对应”的关系，而Map就是为了实现这种数据结构而存在的，我们通过保存键值对的形式来存储映射关系，就可以轻松地通过键找到对应的映射值。
+
+Map接口：
+
+~~~java
+//Map并不是Collection体系下的接口，而是单独的一个体系，因为操作特殊
+//这里需要填写两个泛型参数，其中K就是键的类型，V就是值的类型，比如上面的学生信息，ID一般是int，那么键就是Integer类型的，而值就是学生信息，所以说值是学生对象类型的
+public interface Map<K,V> {
+    //-------- 查询相关操作 --------
+  
+  	//获取当前存储的键值对数量
+    int size();
+
+    //是否为空
+    boolean isEmpty();
+
+    //查看Map中是否包含指定的键
+    boolean containsKey(Object key);
+
+    //查看Map中是否包含指定的值
+    boolean containsValue(Object value);
+
+    //通过给定的键，返回其映射的值
+    V get(Object key);
+
+    //-------- 修改相关操作 --------
+
+    //向Map中添加新的映射关系，也就是新的键值对
+    V put(K key, V value);
+
+    //根据给定的键，移除其映射关系，也就是移除对应的键值对
+    V remove(Object key);
+
+
+    //-------- 批量操作 --------
+
+    //将另一个Map中的所有键值对添加到当前Map中
+    void putAll(Map<? extends K, ? extends V> m);
+
+    //清空整个Map
+    void clear();
+
+
+    //-------- 其他视图操作 --------
+
+    //返回Map中存放的所有键，以Set形式返回
+    Set<K> keySet();
+
+    //返回Map中存放的所有值
+    Collection<V> values();
+
+    //返回所有的键值对，这里用的是内部类Entry在表示
+    Set<Map.Entry<K, V>> entrySet();
+
+    //这个是内部接口Entry，表示一个键值对
+    interface Entry<K,V> {
+        //获取键值对的键
+        K getKey();
+
+        //获取键值对的值
+        V getValue();
+
+        //修改键值对的值
+        V setValue(V value);
+
+        //判断两个键值对是否相等
+        boolean equals(Object o);
+
+        //返回当前键值对的哈希值
+        int hashCode();
+
+        ...
+    }
+
+    ...
+}
+~~~
+
+我们可以来尝试使用一下Map，实际上非常简单，这里我们使用最常见的HashMap，它的底层采用哈希表实现：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "小明");   //使用put方法添加键值对，返回值我们会在后面讨论
+    map.put(2, "小红");
+    System.out.println(map.get(2)); //使用get方法根据键获取对应的值
+}
+//输出结果：小红
+```
+
+注意，Map中无法添加相同的键，同样的键只能存在一个，即使值不同。如果出现键相同的情况，那么会覆盖掉之前的：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "小明");
+    map.put(1, "小红");   //这里的键跟之前的是一样的，这样会导致将之前的键值对覆盖掉
+    System.out.println(map.get(1));
+}
+//输出结果：小红
+```
+
+为了防止意外将之前的键值对覆盖掉，我们可以使用：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "小明");
+    map.putIfAbsent(1, "小红");   //Java8新增操作，只有在不存在相同键的键值对时才会存放
+    System.out.println(map.get(1));
+}
+```
+
+还有，我们在获取一个不存在的映射时，默认会返回null作为结果：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "小明");   //Map中只有键为1的映射
+    System.out.println(map.get(3));  //此时获取键为3的值，那肯定是没有的，所以说返回null
+}
+```
+
+我们也可以为这种情况添加一个预备方案，当Map中不存在时，可以返回一个备选的返回值：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "小明");
+    System.out.println(map.getOrDefault(3, "备胎"));   //Java8新增操作，当不存在对应的键值对时，返回备选方案
+}
+```
+
+同样的，因为HashMap底层采用哈希表实现，所以不维护顺序，我们在获取所有键和所有值时，可能会是乱序的：
+
+```java
+public static void main(String[] args) {
+    Map<String , String> map = new HashMap<>();
+    map.put("0", "十七张");
+    map.put("+", "牌");
+    map.put("P", "你能秒我");
+    System.out.println(map);
+    System.out.println(map.keySet());
+    System.out.println(map.values());
+}
+```
+
+输出结果：
+
+~~~java
+{0=十七张，+=牌，p=你能秒我}
+[0,+,p]
+[十七张，牌，你能秒我]
+~~~
+
+实际上Map的使用还是挺简单的，我们接着来看看Map的底层是如何实现的，首先是最简单的HashMap，我们前面已经说过了，它的底层采用的是哈希表，首先回顾我们之前学习的哈希表，我们当时说了，哈希表可能会出现哈希冲突，这样保存的元素数量就会存在限制，而我们可以通过链地址法解决这种问题，最后哈希表就长这样了：
+
+![](assets/map1.png)
+
+实际上这个表就是一个存放头结点的数组+若干结点，而HashMap也是差不多的实现，我们来看看这里面是怎么定义的：
+
+```java
+public class HashMap<K,V> extends AbstractMap<K,V>
+    implements Map<K,V>, Cloneable, Serializable {
+  
+  	...
+    
+  	static class Node<K,V> implements Map.Entry<K,V> {   //内部使用结点，实际上就是存放的映射关系
+        final int hash;
+        final K key;   //跟我们之前不一样，我们之前一个结点只有键，而这里的结点既存放键也存放值，当然计算哈希还是使用键
+        V value;
+        Node<K,V> next;
+				...
+    }
+  	
+  	...
+  
+  	transient Node<K,V>[] table;   //这个就是哈希表本体了，可以看到跟我们之前的写法是一样的，也是结点数组，只不过HashMap中没有设计头结点（相当于没有头结点的链表）
+  
+  	final float loadFactor;   //负载因子，这个东西决定了HashMap的扩容效果
+  
+  	public HashMap() {
+        this.loadFactor = DEFAULT_LOAD_FACTOR; //当我们创建对象时，会使用默认的负载因子，值为0.75
+    }
+  
+  	...     
+}
+```
+
+可以看到，实际上底层大致结构跟我们之前学习的差不多，只不过多了一些特殊的东西：
+
+- HashMap支持自动扩容，哈希表的大小并不是一直不变的，否则太过死板
+- HashMap并不是只使用简单的链地址法，当链表长度到达一定限制时，会转变为效率更高的红黑树结构
+
+我们来研究一下它的put方法：
+
+```java
+public V put(K key, V value) {
+  	//这里计算完键的哈希值之后，调用的另一个方法进行映射关系存放
+    return putVal(hash(key), key, value, false, true);
+}
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node<K,V>[] tab; Node<K,V> p; int n, i;
+    if ((tab = table) == null || (n = tab.length) == 0)  //如果底层哈希表没初始化，先初始化
+        n = (tab = resize()).length;   //通过resize方法初始化底层哈希表，初始容量为16，后续会根据情况扩容，底层哈希表的长度永远是2的n次方
+  	//因为传入的哈希值可能会很大，这里同样是进行取余操作
+  	//这里做了个优化 (n - 1) & hash 等价于 hash % n （仅限n为2的幂可以这样做）这里的i就是最终得到的下标位置了
+    if ((p = tab[i = (n - 1) & hash]) == null)
+        tab[i] = new Node(hash, key, value, null);   //如果这个位置上什么都没有，那就直接放一个新的结点
+    else {   //这种情况就是哈希冲突了
+        Node<K,V> e; K k;
+        if (p.hash == hash &&   //如果上来第一个结点的键的哈希值跟当前插入的键的哈希值相同，键也相同，说明已经存放了相同键的键值对了，那就执行覆盖操作
+            ((k = p.key) == key || (key != null && key.equals(k))))  //依然是equals判断
+            e = p;   //这里直接将待插入结点等于原本冲突的结点，一会直接覆盖
+        else if (p instanceof TreeNode)   //如果第一个结点是TreeNode类型的，说明这个链表已经升级为红黑树了
+            e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);  //在红黑树中插入新的结点
+        else {
+            for (int binCount = 0; ; ++binCount) {  //普通链表就直接在链表尾部插入
+                if ((e = p.next) == null) {   //e每次都更新为p.next
+                    p.next = newNode(hash, key, value, null);  //找到尾部，直接创建新的结点连在后面
+                    if (binCount >= TREEIFY_THRESHOLD - 1) //如果当前链表的长度已经很长了，达到了阈值
+                        treeifyBin(tab, hash);			//那么就转换为红黑树来存放
+                    break;   //直接结束
+                }
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))  //同样的，如果在向下找的过程中发现已经存在相同键的键值对了，直接结束
+                    break;
+                p = e;
+            }
+        }
+        if (e != null) { // 如果e不为空，只有可能是前面出现了相同键的情况，其他情况e都是null，所以直接覆盖就行
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;  //覆盖原本存储的值
+            afterNodeAccess(e);
+            return oldValue;   //覆盖之后，会返回原本的被覆盖值
+        }
+    }
+    ++modCount;
+    if (++size > threshold)   //键值对size计数自增，如果超过阈值，会对底层哈希表数组进行扩容
+        resize();   //调用resize进行扩容
+    afterNodeInsertion(evict);
+    return null;  //正常插入键值对返回值为null
+}
+```
+
+是不是感觉只要前面的数据结构听懂了，这里简直太简单。根据上面的推导，我们在正常插入一个键值对时，会得到null返回值，而冲突时会得到一个被覆盖的值：
+
+```java
+public static void main(String[] args) {
+    Map<String , String> map = new HashMap<>();
+    System.out.println(map.put("0", "十七张"));
+    System.out.println(map.put("0", "慈善家"));
+}
+//输出结果：null, 十七张
+```
+
+现在我们知道，当HashMap的一个链表长度过大时，会自动转换为红黑树：
+
+![](assets/map_red.png)
+
+但是这样始终治标不治本，受限制的始终是底层哈希表的长度，我们还需要进一步对底层的这个哈希表进行扩容才可以从根本上解决问题，我们来看看`resize()`方法：
+
+```java
+final Node<K,V>[] resize() {
+    Node<K,V>[] oldTab = table;   //先把下面这几个旧的东西保存一下
+    int oldCap = (oldTab == null) ? 0 : oldTab.length;
+    int oldThr = threshold;
+    int newCap, newThr = 0;  //这些是新的容量和扩容阈值
+    if (oldCap > 0) {  //如果旧容量大于0，那么就开始扩容
+        if (oldCap >= MAXIMUM_CAPACITY) {  //如果旧的容量已经大于最大限制了，那么直接给到 Integer.MAX_VALUE
+            threshold = Integer.MAX_VALUE;
+            return oldTab;  //这种情况不用扩了
+        }
+        else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                 oldCap >= DEFAULT_INITIAL_CAPACITY)   //新的容量等于旧容量的2倍，同样不能超过最大值
+            newThr = oldThr << 1; //新的阈值也提升到原来的两倍
+    }
+    else if (oldThr > 0) // 旧容量不大于0只可能是还没初始化，这个时候如果阈值大于0，直接将新的容量变成旧的阈值
+        newCap = oldThr;
+    else {               // 默认情况下阈值也是0，也就是我们刚刚无参new出来的时候
+        newCap = DEFAULT_INITIAL_CAPACITY;   //新的容量直接等于默认容量16
+        newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY); //阈值为负载因子乘以默认容量，负载因子默认为0.75，也就是说只要整个哈希表用了75%的容量，那么就进行扩容，至于为什么默认是0.75，原因很多，这里就不解释了，反正作为新手，这些都是大佬写出来的，我们用就完事。
+    }
+    ...
+    threshold = newThr;
+    @SuppressWarnings({"rawtypes","unchecked"})
+    Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+    table = newTab;   //将底层数组变成新的扩容之后的数组
+    if (oldTab != null) {  //如果旧的数组不为空，那么还需要将旧的数组中所有元素全部搬到新的里面去
+      	...   //详细过程就不介绍了
+    }
+}
+```
+
+是不是感觉自己有点了解HashMap的运作机制了，其实并不是想象中的那么难，因为这些东西再怎么都是人写的。
+
+> HashMap初始容量为0，第一次put的时候，会立即进行一次resize，第一次resize会直接生成一个数组作为哈希表，容量为16，阈值为16 * 0.75，当后续插入键值对超过阈值时，会进行第二次resize，第二次resize会将容量和阈值都变为原来的2倍，第三次以此类推。
+
+而LinkedHashMap是直接继承自HashMap，具有HashMap的全部性质，同时得益于每一个节点都是一个双向链表，在插入键值对时，同时保存了插入顺序：
+
+```java
+static class Entry<K,V> extends HashMap.Node<K,V> {   //LinkedHashMap中的结点实现
+    Entry<K,V> before, after;   //这里多了一个指向前一个结点和后一个结点的引用
+    Entry(int hash, K key, V value, Node<K,V> next) {
+        super(hash, key, value, next);
+    }
+}
+```
+
+这样我们在遍历LinkedHashMap时，顺序就同我们的插入顺序一致。
+
+当然还有一种比较特殊的Map叫做TreeMap，就像它的名字一样，就是一个Tree，它的内部直接维护了一个红黑树（没有使用哈希表）因为它会将我们插入的结点按照规则进行排序，所以说直接采用红黑树会更好，我们在创建时，只需给予一个比较规则即可，跟之前的TreeSet是一样的：
+
+```java
+public static void main(String[] args) {
+    Map<Integer , String> map = new TreeMap<>((a, b) -> b - a);
+    map.put(0, "单走");
+    map.put(1, "一个六");
+    map.put(3, "**");
+    System.out.println(map);
+}
+//输出结果：{3=**，1=一个六，0=单走}
+```
+
+现在我们倒回来看之前讲解的HashSet集合，实际上它的底层很简单：
+
+```java
+public class HashSet<E>
+    extends AbstractSet<E>
+    implements Set<E>, Cloneable, java.io.Serializable
+{
+
+    private transient HashMap<E,Object> map;   //对，你没看错，底层直接用map来做事
+
+    // 因为Set只需要存储Key就行了，所以说这个对象当做每一个键值对的共享Value
+    private static final Object PRESENT = new Object();
+
+    //直接构造一个默认大小为16负载因子0.75的HashMap
+    public HashSet() {
+        map = new HashMap<>();
+    }
+		
+  	...
+      
+    //你会发现所有的方法全是替身攻击
+    public Iterator<E> iterator() {
+        return map.keySet().iterator();
+    }
+
+    public int size() {
+        return map.size();
+    }
+
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+}
+```
+
+通过观察HashSet的源码发现，HashSet几乎都在操作内部维护的一个HashMap，也就是说，HashSet只是一个表壳，而内部维护的HashMap才是灵魂！就像你进了公司，在外面花钱请别人帮你写公司的业务，你只需要坐着等别人写好然后你自己拿去交差就行了。所以说，HashSet利用了HashMap内部的数据结构，轻松地就实现了Set定义的全部功能！
+
+再来看TreeSet，实际上用的就是我们的TreeMap：
+
+```java
+public class TreeSet<E> extends AbstractSet<E>
+    implements NavigableSet<E>, Cloneable, java.io.Serializable
+{
+    //底层需要一个NavigableMap，就是自动排序的Map
+    private transient NavigableMap<E,Object> m;
+
+    //不用我说了吧
+    private static final Object PRESENT = new Object();
+
+    ...
+
+    //直接使用TreeMap解决问题
+    public TreeSet() {
+        this(new TreeMap<E,Object>());
+    }
+		
+  	...
+}
+```
+
+同理，这里就不多做阐述了。
+
+我们接着来看看Map中定义的哪些杂七杂八的方法，首先来看看`compute`方法：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "A");
+    map.put(2, "B");
+    map.compute(1, (k, v) -> {   //compute会将指定Key的值进行重新计算，若Key不存在，v会返回null
+        return v+"M";     //这里返回原来的value+M
+    });
+  	map.computeIfPresent(1, (k, v) -> {   //当Key存在时存在则计算并赋予新的值
+      return v+"M";     //这里返回原来的value+M
+    });
+    System.out.println(map);
+}
+```
+
+也可以使用`computeIfAbsent`，当不存在Key时，计算并将键值对放入Map中：
+
+```java
+public static void main(String[] args) {
+    Map<Integer, String> map = new HashMap<>();
+    map.put(1, "A");
+    map.put(2, "B");
+    map.computeIfAbsent(0, (k) -> {   //若不存在则计算并插入新的值
+        return "M";     //这里返回M
+    });
+    System.out.println(map);
+}
+```
+
+merge方法用于处理数据：
+
+```java
+public static void main(String[] args) {
+    List<Student> students = Arrays.asList(
+            new Student("yoni", "English", 80),
+            new Student("yoni", "Chiness", 98),
+            new Student("yoni", "Math", 95),
+            new Student("taohai.wang", "English", 50),
+            new Student("taohai.wang", "Chiness", 72),
+            new Student("taohai.wang", "Math", 41),
+            new Student("Seely", "English", 88),
+            new Student("Seely", "Chiness", 89),
+            new Student("Seely", "Math", 92)
+    );
+    Map<String, Integer> scoreMap = new HashMap<>();
+  	//merge方法可以对重复键的值进行特殊操作，比如我们想计算某个学生的所有科目分数之后，那么就可以像这样：
+    students.forEach(student -> scoreMap.merge(student.getName(), student.getScore(), Integer::sum));
+    scoreMap.forEach((k, v) -> System.out.println("key:" + k + "总分" + "value:" + v));
+}
+
+static class Student {
+    private final String name;
+    private final String type;
+    private final int score;
+
+    public Student(String name, String type, int score) {
+        this.name = name;
+        this.type = type;
+        this.score = score;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public String getType() {
+        return type;
+    }
+}
+```
+
+`replace`方法可以快速替换某个映射的值：
+
+```java
+public static void main(String[] args) {
+    Map<Integer , String> map = new HashMap<>();
+    map.put(0, "单走");
+    map.replace(0, ">>>");   //直接替换为新的
+    System.out.println(map);
+}
+```
+
+也可以精准匹配：
+
+```java
+public static void main(String[] args) {
+    Map<Integer , String> map = new HashMap<>();
+    map.put(0, "单走");
+    map.replace(0, "巴卡", "玛卡");   //只有键和值都匹配时，才进行替换
+    System.out.println(map);
+}
+```
+
+包括remove方法，也支持键值同时匹配：
+
+```java
+public static void main(String[] args) {
+    Map<Integer , String> map = new HashMap<>();
+    map.put(0, "单走");
+    map.remove(0, "单走");  //只有同时匹配时才移除
+    System.out.println(map);
+}
+```
+
+------
+
+### 比较相关接口
+
+很多的类中都存在一个`compareTo`方法，这实际上是因为这个类实现了`Comparable`接口获得的方法，我们常见的一些JDK提供的类型，如String、基本类型包装类、Date、LocalDate等，其实都实现了此接口，从而自带对于其类型对象之间的比较操作：
+
+```java
+String s1 = "AAA", s2 = "BBB";
+System.out.println(s1.compareTo(s2));  //按字典顺序比较两个字符串,比较基于字符串中每个字符的 Unicode 值。
+```
+
+这与我们前面提到过的`Comparator`类似，当返回值大于0说明前者大于后者，小于0则是后者大于前者，如果等于0则表示这两者相等。但是注意`Comparator`是用于直接手动创建比较规则，而`Comparable`则是直接让类自行定义内部比较规则，包括这两者的使用的地方也不一样。
+
+比如我们前面介绍的`Arrays`工具类，其中就包含`sort`方法进行排序，我们可以直接传入一个数组让其自动完成排序操作：
+
+```java
+String[] arr = { "DDD", "BBB", "CCC", "AAA" };
+Arrays.sort(arr);
+System.out.println(Arrays.toString(arr));
+```
+
+但是注意，我们进行排序的类型必须是一个实现了`Comparable`接口的类型，否则无法进行排序：
+
+```java
+public static void main(String[] args) {
+    Student[] arr = { new Student(), new Student() };
+    Arrays.sort(arr);
+    System.out.println(Arrays.toString(arr));
+}
+    
+static class Student {}
+```
+
+我们可以为我们自己定义的类实现`Comparable`接口，实现一个自己的比较操作即可：
+
+```java
+public static void main(String[] args) {
+    Student[] arr = { new Student(19), new Student(18) };
+    Arrays.sort(arr);
+    System.out.println(Arrays.toString(arr));
+}
+
+static class Student implements Comparable<Student> {
+    int age;
+
+    public Student(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public int compareTo(Student o) {
+        return age - o.age;   //直接比较年龄
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+               "age=" + age +
+               '}';
+    }
+}
+```
+
+实际上我们之前介绍的`TreeSet`和`TreeMap`，在我们不指定任何排序规则的情况下，默认也是采用类中Comparable的实现进行排序的，如果我们直接使用一个为实现`Comparable`接口的类型，同样会出现报错
+
+不过，除了让类本身实现`Comparable`接口之外，对于一些第三方提供的类型我们无法进行修改的，此时也可以手动指定比较规则，也就是通过传入一个`Comparator`的实现：
+
+```java
+public static void main(String[] args) {
+    TreeSet<Student> set = new TreeSet<>((s1, s2) -> s1.age - s2.age);  //手动指定一个比较规则也可以
+    set.add(new Student(19));
+    set.add(new Student(18));
+    System.out.println(set);
+}
+
+static class Student {
+    int age;
+
+    public Student(int age) {
+        this.age = age;
+    }
+}
+```
+
+同样的，数组也有类似的`sort`方法，这里就不列出了。接下来我们就着重介绍一下`Comparator`接口：
+
+```java
+@FunctionalInterface
+public interface Comparator<T> {
+    //我们需要实现的比较方法
+    int compare(T o1, T o2);
+
+    //从Object继承下来的方法，这里进行了重新定义，
+    //除了比较两个元素相等之外，它还额外要求两个元素compare得到的结果为0
+    boolean equals(Object obj);
+
+    //根据当前实现的compare操作，生成一个相反的比较Comparator
+    default Comparator<T> reversed() {
+        return Collections.reverseOrder(this);
+    }
+
+    //在原有比较基础上，附加次级比较条件（也就是说如果比较出来两个对象相等，就继续按照次级条件比较得到谁前谁后）
+    default Comparator<T> thenComparing(Comparator<? super T> other) {
+        Objects.requireNonNull(other);
+        return (Comparator<T> & Serializable) (c1, c2) -> {
+            int res = compare(c1, c2);
+            return (res != 0) ? res : other.compare(c1, c2);
+        };
+    }
+
+    //上面的进阶版，可以自定义类中属性(作为key)的获取规则，并对此属性进行比较
+    default <U> Comparator<T> thenComparing(
+            Function<? super T, ? extends U> keyExtractor,
+            Comparator<? super U> keyComparator)
+    {
+        return thenComparing(comparing(keyExtractor, keyComparator));
+    }
+
+    //上面的简化版，只有类中属性(作为key)的获取规则，比较规则使用key默认的实现（Key必须是Comparable的实现类）
+    default <U extends Comparable<? super U>> Comparator<T> thenComparing(
+            Function<? super T, ? extends U> keyExtractor)
+    {
+        return thenComparing(comparing(keyExtractor));
+    }
+
+    //针对于特定内置类型的提取并比较，同上，后续同理
+    default Comparator<T> thenComparingInt(ToIntFunction<? super T> keyExtractor) {
+        return thenComparing(comparingInt(keyExtractor));
+    }
+
+    ...
+
+    //------以下是所有的静态方法，可以直接生成一个新的Comparator对象
+      
+    //生成一个指定类型（需要实现Comparable）的反向比较器
+    public static <T extends Comparable<? super T>> Comparator<T> reverseOrder() {
+        return Collections.reverseOrder();
+    }
+
+    //生成一个指定类型（需要实现Comparable）的正向比较器
+    @SuppressWarnings("unchecked")
+    public static <T extends Comparable<? super T>> Comparator<T> naturalOrder() {
+        return (Comparator<T>) Comparators.NaturalOrderComparator.INSTANCE;
+    }
+
+    //生成一个指定类型的正向比较器，且针对于null值，会优先排到前面
+    public static <T> Comparator<T> nullsFirst(Comparator<? super T> comparator) {
+        return new Comparators.NullComparator<>(true, comparator);
+    }
+
+    //生成一个指定类型的正向比较器，且针对于null值，会直接排到后面
+    public static <T> Comparator<T> nullsLast(Comparator<? super T> comparator) {
+        return new Comparators.NullComparator<>(false, comparator);
+    }
+
+    //传入一个指定类型用于比较的Key的获取方式，然后再传入Key的比较操作实现
+    public static <T, U> Comparator<T> comparing(
+            Function<? super T, ? extends U> keyExtractor,
+            Comparator<? super U> keyComparator)
+    {
+        Objects.requireNonNull(keyExtractor);
+        Objects.requireNonNull(keyComparator);
+        return (Comparator<T> & Serializable)
+            (c1, c2) -> keyComparator.compare(keyExtractor.apply(c1),
+                                              keyExtractor.apply(c2));
+    }
+
+    //传入一个指定类型用于比较的Key（需要实现Comparable）的获取方式，然后自动进行比较
+    public static <T, U extends Comparable<? super U>> Comparator<T> comparing(
+            Function<? super T, ? extends U> keyExtractor)
+    {
+        Objects.requireNonNull(keyExtractor);
+        return (Comparator<T> & Serializable)
+            (c1, c2) -> keyExtractor.apply(c1).compareTo(keyExtractor.apply(c2));
+    }
+
+    //针对于内置类型的
+    public static <T> Comparator<T> comparingInt(ToIntFunction<? super T> keyExtractor) {
+        Objects.requireNonNull(keyExtractor);
+        return (Comparator<T> & Serializable)
+            (c1, c2) -> Integer.compare(keyExtractor.applyAsInt(c1), keyExtractor.applyAsInt(c2));
+    }
+
+    ...
+}
+```
+
+至此，有关两个比较相关的接口就介绍完成了。
+
+------
+
+### Collections工具类
+
+我们在前面介绍了Arrays，它是一个用于操作数组的工具类，它给我们提供了大量的工具方法。
+
+既然数组操作都这么方便了，集合操作能不能也安排点高级的玩法呢？那必须的，JDK为我们准备的Collocations类就是专用于集合的工具类，比如我们想快速求得List中的最大值和最小值：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>();
+    Collections.max(list);
+    Collections.min(list);
+}
+```
+
+同样的，我们可以对一个集合进行二分搜索（注意，集合的具体类型，必须是实现Comparable接口的类）：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = Arrays.asList(2, 3, 8, 9, 10, 13);
+    System.out.println(Collections.binarySearch(list, 8));
+}
+```
+
+我们也可以对集合的元素进行快速填充，注意这个填充是对集合中已有的元素进行覆盖：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>(Arrays.asList(1,2,3,4,5));
+    Collections.fill(list, 6);
+    System.out.println(list);
+}
+```
+
+如果集合中本身没有元素，那么`fill`操作不会生效。
+
+有些时候我们可能需要生成一个空的集合类返回，那么我们可以使用`emptyXXX`来快速生成一个只读的空集合：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = Collections.emptyList();
+  	//Collections.singletonList() 会生成一个只有一个元素的List
+    list.add(10);   //不支持，会直接抛出异常
+}
+```
+
+我们也可以将一个可修改的集合变成只读的集合：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>(Arrays.asList(1,2,3,4,5));
+    List<Integer> newList = Collections.unmodifiableList(list);
+    newList.add(10);   //不支持，会直接抛出异常
+}
+```
+
+我们也可以寻找子集合的位置：
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>(Arrays.asList(1,2,3,4,5));
+    System.out.println(Collections.indexOfSubList(list, Arrays.asList(4, 5)));
+}
+```
+
+得益于泛型的类型擦除机制，实际上最后只要是Object的实现类都可以保存到集合类中，那么就会出现这种情况：
+
+```java
+public static void main(String[] args) {
+  	//使用原始类型接收一个Integer类型的ArrayList
+    List list = new ArrayList<>(Arrays.asList(1,2,3,4,5));
+    list.add("aaa");   //我们惊奇地发现，这玩意居然能存字符串进去
+    System.out.println(list);
+}
+//输出结果：[1,2,3,4,5,aaa]
+```
+
+没错，由于泛型机制上的一些漏洞，实际上对应类型的集合类有可能会存放其他类型的值，泛型的类型检查只存在于编译阶段，只要我们绕过这个阶段，在实际运行时，并不会真的进行类型检查，要解决这种问题很简单，就是在运行时进行类型检查：
+
+java复制代码
+
+```java
+public static void main(String[] args) {
+    List list = new ArrayList<>(Arrays.asList(1,2,3,4,5));
+    list = Collections.checkedList(list, Integer.class);   //这里的.class关键字我们会在后面反射中介绍，表示Integer这个类型
+  	list.add("aaa");
+    System.out.println(list);
+}
+```
+
+`checkedXXX`可以将给定集合类进行包装，在运行时同样会进行类型检查，如果通过上面的漏洞插入一个本不应该是当前类型集合支持的类型，那么会直接抛出类型转换异常
