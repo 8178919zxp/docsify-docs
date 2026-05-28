@@ -219,17 +219,22 @@ SELECT info->'$.name' AS name, info->'$.age' AS age FROM user;
 
 ```sql
 
-CREATE TABLE user (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50),
-    password VARCHAR(100),
-    age INT,
-    balance DECIMAL(10,2),
-    status TINYINT,
-    create_time DATETIME,
-    profile TEXT,
-    extra JSON
-);
+-- 案例设计员工表emp
+-- 基础字段： id 主键; create_time 创建时间; update_time 修改时间;
+create table emp(
+    id int primary key auto_increment comment 'ID,主键',  # auto_increment 自增 comment 注释
+    username varchar(20) not null unique comment '用户名', # unique 唯一
+    password varchar(32) default '123456' comment '密码',
+    name varchar(10) not null comment '姓名',
+    gender tinyint unsigned not null comment '性别,1 男; 2 女', # unsigned 无符号(为正)
+    phone char(11) not null unique comment '手机号',
+    job tinyint unsigned comment '职位,1 班主任; 2  讲师; 3 学生主管; 4 教研主管 ; 5 咨询师',
+    salary int unsigned comment '薪资',
+    entry_date datetime comment '入职日期',
+    image varchar(255) comment '图像',
+    create_time datetime comment '创建时间',
+    update_time datetime comment '修改时间'
+) comment '员工表';
 ```
 
 ---
@@ -304,6 +309,8 @@ SELECT * FROM `student` LIMIT 10 OFFSET 0; -- 第1页，每页10条
 SELECT * FROM `student` LIMIT 10, 20; -- 简写：从第10条开始，取20条
 -- 去重
 SELECT DISTINCT `major` FROM `student`; -- 去重查询专业
+-- 查询 入职日期 在 '2000-01-01' (包含) 到 '2010-01-01'(包含) 之间的员工信息
+select  * from emp where entry_date between '2000-01-01' and '2010-01-01'; -- between ... and ...相当于>= 和 <=
 ```
 
 #### UNION 并集
